@@ -1,6 +1,6 @@
 
 import json
-D_replacers = {
+D_ct_replacers = {
                 'С/Т': 'Камаз ',
                 'С/С': 'Камаз ',
                 'В/А': 'Камаз ',
@@ -24,8 +24,8 @@ D_replacers = {
                 '-к ' : 'del к',
                 'б/н' : 'del б/н',
             }        
-json.dump(D_replacers, open( "D_replacers.json", 'w' ))
-D_patterns = {
+json.dump(D_ct_replacers, open( "D_ct_replacers.json", 'w' ))
+D_ct_patterns = {
                 '(гос.№)|(гос№)|(Гос№)|(№)': ' ',
                 'Маш-т': ' ', 
                 '\n': ' ', 
@@ -52,9 +52,9 @@ D_patterns = {
                 'МК30Т': ' '
             }
 
-json.dump(D_patterns, open( "D_patterns.json", 'w' ))
-D_trucks = {
+json.dump(D_ct_patterns, open( "D_ct_patterns.json", 'w' ))
+D_ct_trucks = {
         '072': '072нива',
         '445': '445енс'
 }
-json.dump(D_trucks, open( "D_trucks.json", 'w' ))
+json.dump(D_ct_trucks, open( "D_ct_trucks.json", 'w' ))
