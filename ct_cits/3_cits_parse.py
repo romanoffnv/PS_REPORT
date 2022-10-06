@@ -206,7 +206,7 @@ def main():
 
    df = pd.DataFrame(zip(L_dept, L_units, L_plates, L_plates_ind, L_fields), columns=['Dept', 'Unit', 'Plate', 'Plate_index', 'Loc'])
    df = df.drop_duplicates(subset=['Plate'], keep='first')
-   print(df)
+   
    
 
    # Post into db
