@@ -65,23 +65,23 @@ def main():
     
     
     # Posting dataframe back into the sql database
-    # cursor.execute("DROP TABLE IF EXISTS final_DB")
-    # cursor.execute("""
-    #     CREATE TABLE IF NOT EXISTS final_DB(
-    #     Department text,
-    #     Vehicle text,
-    #     Plate text,
-    #     Vehicle_name text,
-    #     Plate_index text,
-    #     No_data text
-    #     )
-    #     """)
+    cursor.execute("DROP TABLE IF EXISTS final_DB")
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS final_DB(
+        Department text,
+        Vehicle text,
+        Plate text,
+        Plate_index text,
+        No_data text
+        )
+        """)
 
-    # data.to_sql('final_DB', db, if_exists='replace', index = False)
+    cursor.executemany("INSERT INTO final_DB VALUES (?, ?, ?, ?, ?)", zip(L_total_dep, L_total_veh, L_total_plate, L_total_plates_ind, L_total_nodata))
 
 
-    # db.commit()
-    # db.close()
+
+    db.commit()
+    db.close()
     print("5_pre_final is complete")
     
 if __name__ == '__main__':

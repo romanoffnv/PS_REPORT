@@ -61,7 +61,6 @@ def main():
     L_department = cursor.execute("SELECT Department FROM final_DB").fetchall()
     L_vehicle = cursor.execute("SELECT Vehicle FROM final_DB").fetchall()
     L_plate = cursor.execute("SELECT Plate FROM final_DB").fetchall()
-    L_veh_name = cursor.execute("SELECT Vehicle_Name FROM final_DB").fetchall()
     L_plate_index = cursor.execute("SELECT Plate_index FROM final_DB").fetchall()
     L_nodata = cursor.execute("SELECT No_data FROM final_DB").fetchall()
 
@@ -89,28 +88,33 @@ def main():
     L_locations = [x for x in L_locco]
 
     # Building dataframe
-    data = pd.DataFrame(zip(L_department, L_vehicle, L_plate, L_veh_name, L_plate_index, L_locations, L_nodata), 
-                columns = ['Department', 'Vehicle', 'Plate', 'Vehicle_name', 'Plate_index', 'Location_Omnicomm', 'No_data'])
+    data = pd.DataFrame(zip(L_department, L_vehicle, L_plate, L_plate_index, L_locations, L_nodata), 
+                columns = ['Department', 'Vehicle', 'Plate', 'Plate_index', 'Location_Omnicomm', 'No_data'])
     
     # Posting dataframe back into the sql database
+    
     cursor.execute("DROP TABLE IF EXISTS final_DB")
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS final_DB(
-        Department text,
-        Vehicle text,
-        Plate text,
-        Vehicle_name text,
-        Plate_index text,
-        Location_Omnicomm text,
-        No_data text
-        )
-        """)
-
-    data.to_sql('final_DB', db, if_exists='replace', index = False)
-
-
+    data.to_sql(name='final_DB', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
+    # cursor.execute("DROP TABLE IF EXISTS final_DB")
+    # cursor.execute("""
+    #     CREATE TABLE IF NOT EXISTS final_DB(
+    #     Department text,
+    #     Vehicle text,
+    #     Plate text,
+    #     Vehicle_name text,
+    #     Plate_index text,
+    #     Location_Omnicomm text,
+    #     No_data text
+    #     )
+    #     """)
+
+    # data.to_sql('final_DB', db, if_exists='replace', index = False)
+
+
+    # db.commit()
+    # db.close()
 
      # Create a Pandas Excel writer using XlsxWriter as the engine.
     writer = pd.ExcelWriter('DB.xlsx', engine='xlsxwriter')
