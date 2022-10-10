@@ -197,12 +197,7 @@ def main():
    for k, v in D_trucks.items():
       L_plates_ind = [re.sub(k, v, x) for x in L_plates_ind]
      
-   # temp crutch for diesels
-   # for i in L_plates_ind:
-   #    if i == '':
-   #       ind = L_plates_ind.index(i)
-   #       L_plates_ind[ind] = 111111
-   # pprint(L_plates_ind)
+ 
 
    df = pd.DataFrame(zip(L_dept, L_units, L_plates, L_plates_ind, L_fields), columns=['Dept', 'Unit', 'Plate', 'Plate_index', 'huis'])
    df = df.drop_duplicates(subset=['Plate'], keep='first')
