@@ -12,10 +12,10 @@ from collections import defaultdict
 from collections import Counter
 
 # Get the Excel Application COM object
-xl = EnsureDispatch('Excel.Application')
-wb = xl.Workbooks.Open(f"{os.getcwd()}\\brm.xlsx")
-Sheets = wb.Sheets.Count
-ws = wb.Worksheets(Sheets)
+# xl = EnsureDispatch('Excel.Application')
+# wb = xl.Workbooks.Open(f"{os.getcwd()}\\brm.xlsx")
+# Sheets = wb.Sheets.Count
+# ws = wb.Worksheets(Sheets)
 
 # Making connections to DBs
 db_brm = sqlite3.connect('brm.db')
@@ -30,8 +30,10 @@ cursor_om = db_om.cursor()
 pd.set_option('display.max_rows', None)
 
 def main():
+    L_crews = cursor_brm.execute("SELECT Crews FROM Units_Locs_Raw").fetchall()
     L_plates = cursor_brm.execute("SELECT Units_1 FROM Units_Locs_Raw").fetchall()
     L_plates2 = cursor_brm.execute("SELECT Units_2 FROM Units_Locs_Raw").fetchall()
+    L_locs = cursor_brm.execute("SELECT Locs FROM Units_Locs_Raw").fetchall()
     
     
     # Clean col C 
@@ -54,14 +56,28 @@ def main():
     }
 
     for k, v in D_replacers.items():
-        L_plates = [''.join(re.sub(k, v, x)).strip() for x in L_plates if x != None]
+        L_plates = [''.join(re.sub(k, v, x)).strip() if x != None else '' for x in L_plates ]
 
-    
-    
     L_plates = [x.split('**') for x in L_plates]
     L_plates = list(itertools.chain.from_iterable(L_plates))
     L_plates = [x.strip() for x in L_plates if x != '']
-    
+
+    L_crews1 = []
+    for i in L_plates:
+        # print(i)
+        L_crews1.append(cursor_brm.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units_1 like '%{i}%'").fetchall())
+    L_crews1 = list(itertools.chain.from_iterable(L_crews1))
+    L_crews1 = [x.strip() for x in L_crews1 if x != '']
+
+    df = pd.DataFrame(zip(L_crews1, L_plates))
+    pprint(df)
+    # pprint(L_crews1)
+    # pprint(len(L_crews1))
+
+    # print(len(L_crews))
+    # print(len(L_plates))
+    # print(len(L_plates2))
+    # print(len(L_locs))
     
     # Clean col D
     L_splits = ['\n', 'ВД', '/']
@@ -126,15 +142,16 @@ def main():
     df = pd.DataFrame(zip(L_om_units, L_om_index), columns=['Units', 'Plate_index'])
     df = df.loc[df.Plate_index.isin(L_matched_plates)]
     df = df.drop_duplicates(subset=['Plate_index'], keep='first')
-    
+   
     # Derivating matched units from matched plates
     L_matched_units = df.loc[:, 'Units']
+    L_matched_index = df.loc[:, 'Plate_index']
     
     # Verifying matched and unmatched against total by plates
-    pprint(f'Number of all trucks by plates: {len(L_plates_ind)}')
-    pprint(f'Number of trucks matched to Omnicomm: {len(L_matched_plates)}')
-    pprint(f'Number of trucks unmatched to Omnicomm: {len(L_unmatched_plates)}')
-    pprint(f'Sum of matched and unmatched equals to all trucks: {len(L_plates_ind) == (len(L_matched_plates) + len(L_unmatched_plates))}')
+    # pprint(f'Number of all trucks by plates: {len(L_plates_ind)}')
+    # pprint(f'Number of trucks matched to Omnicomm: {len(L_matched_index)}')
+    # pprint(f'Number of trucks unmatched to Omnicomm: {len(L_unmatched_plates)}')
+    # pprint(f'Sum of matched and unmatched equals to all trucks: {len(L_plates_ind) == (len(L_matched_plates) + len(L_unmatched_plates))}')
     
     # Checking if a unit is missing in D_unmatched_trucks database dictionary @ ditc_brm
     D_unmatched_trucks = json.load(open('D_brm_unmatchedTrucks.json'))
@@ -144,7 +161,7 @@ def main():
     
     
     # Building dataframes of matched and unmatched units and plates
-    df_matched = pd.DataFrame(zip(L_matched_units, L_matched_plates), columns=['Units', 'Plate_index']) 
+   
     L1, L2 = [], []
     for k, v in D_unmatched_trucks.items():
         if k in L_unmatched_plates:
@@ -157,22 +174,61 @@ def main():
     def numeric_maker(L):
         L = [''.join(re.findall(r'\d+', x)).lower() for x in L if x != None]
         return L
-    L_matched_numeric = numeric_maker(L_matched_plates)
+    L_matched_numeric = numeric_maker(L_matched_index)
     L_unmatched_numeric = numeric_maker(df_unmatched.loc[:, 'Plate_index'])
     
     # db to df
-    L_crews = cursor_brm.execute("SELECT Crews FROM Units_Locs_Raw").fetchall()
-    L_plates = cursor_brm.execute("SELECT Units_1 FROM Units_Locs_Raw").fetchall()
-    L_plates2 = cursor_brm.execute("SELECT Units_2 FROM Units_Locs_Raw").fetchall()
-    L_locs = cursor_brm.execute("SELECT Locs FROM Units_Locs_Raw").fetchall()
+    df_matched = pd.DataFrame(zip(L_matched_units, L_matched_index, L_matched_numeric), columns=['Units', 'Plate_index', 'Numeric']) 
+    # pprint(df_matched)
 
-    df_locs = pd.DataFrame(zip(L_crews, L_plates), columns=['Crews', 'Units_1'])
-    # substring to be searched
-    sub ='686'
- 
-    # creating and passing series to new column
-    df_locs["Crews"]= df_locs["Units_1"].str.find(sub)
+    L_crws, L_lcs = [], []
+    for i in L_matched_numeric:
+        # print(i)
+        L_crws.append(cursor_brm.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units_1 OR Units_1 like '%{i}%'").fetchall())
+        # L_lcs.append(cursor_brm.execute(f"SELECT Locs FROM Units_Locs_Raw WHERE Units_1 like '%{i}%'").fetchall())
+    # pprint(L_crws)
+    # df = pd.DataFrame(zip(L_crws, L_matched_units, L_matched_index, L_lcs))
+    # pprint(df)
+    # pprint(len(df))
+    # L_plates = cursor_brm.execute("SELECT Units_1 FROM Units_Locs_Raw").fetchall()
+    # L_plates2 = cursor_brm.execute("SELECT Units_2 FROM Units_Locs_Raw").fetchall()
+    # pprint(len(L_crews))
+    # pprint(len(L_plates))
+    # pprint(len(L_plates2))
+    # pprint(len(L_locs))
     
-    pprint(df_locs)
+    # L_c, L_p, L_l = [], [], []
+    # for i in L_matched_numeric:
+    #     for c, p, l in zip(L_crews, L_plates, L_locs):
+    #         if i in str(p):
+    #             L_c.append(c) 
+    #             L_p.append(i)
+    #             L_l.append(l)
+    #             break
+
+    
+    # L_c2, L_p2, L_l2 = [], [], []
+    # for i in L_matched_numeric:
+    #     for c, p, l in zip(L_crews, L_plates2, L_locs):
+    #         if i in str(p):
+    #             L_c2.append(c) 
+    #             L_p2.append(i)
+    #             L_l2.append(l)
+    #             break
+            
+    # pprint(L_l2)
+  
+    # L_crews = L_c + L_c2
+    # L_plates = L_p + L_p2
+    # L_locs = L_l + L_l2
+    # pprint(len(L_crews))
+    # pprint(len(L_plates))
+    # pprint(len(L_locs))
+
+    # ddf = pd.DataFrame(zip(L_crews, L_plates, L_locs), columns=['Crews', 'Plate_index', 'Loc'])
+    # ddf = ddf.drop_duplicates(subset=['Plate_index'], keep='first')
+    # pprint(ddf)
+    # pprint(ddf.describe())
 if __name__ == '__main__':
     main()
+
