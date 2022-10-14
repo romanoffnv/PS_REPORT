@@ -5,7 +5,6 @@ from collections import defaultdict
 import pandas as pd
 
 
-
 db = sqlite3.connect('omnicomm.db')
 cursor = db.cursor()
 

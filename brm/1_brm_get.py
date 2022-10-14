@@ -39,6 +39,7 @@ def main():
             break
 
     
+    
     # The function returns the trucks from all blocks
     def data_acquirer(srow, erow, col):
         
@@ -52,7 +53,7 @@ def main():
             
         return L
 
-    # Listing block beginning and block ending rows to be thrown as params into data_acquirer fucn
+    # Listing block beginning and block ending rows to be thrown as params into data_acquirer func
     L_startIndex = L_block_rows[:-1]
     L_endIndex = L_block_rows[1:]
     
@@ -64,6 +65,15 @@ def main():
         L_locs.append(data_acquirer(j, k, 11))
         
     
+    L_group_len = []
+    for i in L_units:
+        L_group_len.append(len(i))
+    
+    
+    L_crews = [(i + '**').split('**') * j for i, j in (zip(L_crew_names, L_group_len))]
+    L_crews = list(itertools.chain.from_iterable(L_crews))
+    L_crews = list(filter(None, L_crews))
+    
     
     wb.Close(True)
     xl.Quit()
@@ -71,8 +81,9 @@ def main():
     L_units = list(itertools.chain.from_iterable(L_units))
     L_units2 = list(itertools.chain.from_iterable(L_units2))
     L_locs = list(itertools.chain.from_iterable(L_locs))
+    
     # Build df for location picking
-    df = pd.DataFrame(zip(L_units, L_units2, L_locs), columns=['Units_1', 'Units_2', 'L_locs'])
+    df = pd.DataFrame(zip(L_crews, L_units, L_units2, L_locs), columns=['Crews', 'Units_1', 'Units_2', 'Locs'])
     print(df)
    
     # Post df to DB

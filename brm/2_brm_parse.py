@@ -34,7 +34,6 @@ def main():
     L_plates2 = cursor_brm.execute("SELECT Units_2 FROM Units_Locs_Raw").fetchall()
     
     
-    
     # Clean col C 
     D_replacers = {
         '\s+': ' ',
@@ -56,10 +55,13 @@ def main():
 
     for k, v in D_replacers.items():
         L_plates = [''.join(re.sub(k, v, x)).strip() for x in L_plates if x != None]
+
+    
     
     L_plates = [x.split('**') for x in L_plates]
     L_plates = list(itertools.chain.from_iterable(L_plates))
     L_plates = [x.strip() for x in L_plates if x != '']
+    
     
     # Clean col D
     L_splits = ['\n', 'ВД', '/']
@@ -86,7 +88,7 @@ def main():
     # pprint(L_plates)
     # Turn plates into 123abc type
     def transform_plates(plates):
-        L_regions = [186, 86, 797, '02', '07', 82, 78, 54, 77, 126, 188, 88, 89, 174, 74, 158, 196, 156, 76]
+        L_regions = [186, 86, 797, '02', '07', 82, 78, 54, 52, 77, 126, 188, 88, 89, 174, 74, 158, 196, 156, 76]
         
         for i in L_regions:
             plates = [x.removesuffix(str(i)).strip() if x != None and len(x) > 7 else x for x in plates]
@@ -104,13 +106,9 @@ def main():
     # Removing bare indeces like '743вмт' which are duplicates for
     L_plates_ind = [x for x in L_plates_ind if len(x) != 3]
     
-    D_descrepancy_fix = {
-        '435аср': '435акр',
-        '408акс': '408авм',
-        '680екм': '680екн',
-    }
-
-    for k, v in D_descrepancy_fix.items():
+    # Fixing discrepancies in plates
+    D_brm_descrepancy = json.load(open('D_brm_descrepancy.json'))    
+    for k, v in D_brm_descrepancy.items():
         L_plates_ind = [x.replace(k, v) for x in L_plates_ind]
 
     # Match CD to omnicomm, if matches pull unit name from omnicomm into L_unit
@@ -119,107 +117,62 @@ def main():
 
     
     L_plates_ind = set(L_plates_ind)
-    # pprint(L_plates_ind)
-    # pprint(len(L_plates_ind))
+    
 
     L_matched_plates = [x for x in L_plates_ind if x in L_om_index]
     L_unmatched_plates = [x for x in L_plates_ind if x not in L_om_index]
+
+    # Matching plates to Omnicomm
     df = pd.DataFrame(zip(L_om_units, L_om_index), columns=['Units', 'Plate_index'])
     df = df.loc[df.Plate_index.isin(L_matched_plates)]
     df = df.drop_duplicates(subset=['Plate_index'], keep='first')
     
+    # Derivating matched units from matched plates
     L_matched_units = df.loc[:, 'Units']
     
-    D_unmached_names = {
-        '7708нх': 'Прицеп',
-        '889вмт': 'Тойота hillux',
-        '9917ах': 'Прицеп АЦ-17',
-        '125как': 'МАЗ АЦ 20м3 НК-Транс',
-        '7403ук': 'Прицеп АЦ 10м3',
-        '4683ат': 'Полуприцеп',
-        '4897ат': 'Полуприцеп',
-        '1974вв': 'Прицеп АЦ-17',
-        '2847ау': 'Полуприцеп',
-        '1823ан': 'Насос ВД',
-        '367вмм': 'Тойота hillux',
-        '9910ах': 'Площадка',
-        '0762н': 'Насос ВД',
-        '6562ах': 'Кран-манипулятор',
-        '479ммс': 'Шевроле Нива',
-        '7458ас': 'Автоцестерна 20м3-полуприцеп',
-        '971внх': 'Полуприцеп (Химка)',
-        '2130ах': 'Площадка',
-        '531хху': 'МАЗ АЦ 20м3 НК-Транс',
-        '2872вв': 'Полуприцеп',
-        '4697ат': 'Площадка',
-        '0877ва': 'Прицеп АЦ-17',
-        '813рос': 'Автокран МАЗ ИП Рыжков',
-        '686вмт':,
-        '6415ах':,
-        '1474ах':,
-        '120530ghsm':,
-        '513сне':,
-        '0897ва':,
-        '004aae':,
-        '740онв':,
-        '2861вв':,
-        '2862вв':,
-        '341внм':,
-        '7717нх':,
-        '324авр':,
-        '508ауа':,
-        '365вмм':,
-        '0842ва':,
-        '2841вв':,
-        '7232ау':,
-        '6561ах':,
-        '3105ат':,
-        '2696ат':,
-        '250кох':,
-        '746кох':,
-        '693вмт':,
-        '492аое':,
-        '5403ва':,
-        '564вмм':,
-        '898вмм':,
-        '9892ах':,
-        '7231ау':,
-        '395вмт':,
-        '0879ва':,
-        '2870вв':,
-        '184оас':,
-        '692ахр':,
-        '5824вв':,
-        '4740ат':,
-        '0909ва':,
-        '6420ах':,
-        '8098ах':,
-        '352вмм':,
-        '0932ат':,
-        '6339ау':,
-        '562вмм':,
-        '896вмт':
-            }
-    pprint(L_unmatched_plates)
-    pprint(len(L_unmatched_plates))
+    # Verifying matched and unmatched against total by plates
+    pprint(f'Number of all trucks by plates: {len(L_plates_ind)}')
+    pprint(f'Number of trucks matched to Omnicomm: {len(L_matched_plates)}')
+    pprint(f'Number of trucks unmatched to Omnicomm: {len(L_unmatched_plates)}')
+    pprint(f'Sum of matched and unmatched equals to all trucks: {len(L_plates_ind) == (len(L_matched_plates) + len(L_unmatched_plates))}')
     
-    # pprint(len(L_matched_plates))
-    # pprint(len(L_matched_units))
-    # print(len(df))
+    # Checking if a unit is missing in D_unmatched_trucks database dictionary @ ditc_brm
+    D_unmatched_trucks = json.load(open('D_brm_unmatchedTrucks.json'))
+    for i in L_unmatched_plates:
+        if i not in D_unmatched_trucks:
+            print(f'Vehicles not in D_unmached_db {i} or maybe should be in D_descrepancy_fix, please add manually into dict_brm.py')
     
+    
+    # Building dataframes of matched and unmatched units and plates
+    df_matched = pd.DataFrame(zip(L_matched_units, L_matched_plates), columns=['Units', 'Plate_index']) 
+    L1, L2 = [], []
+    for k, v in D_unmatched_trucks.items():
+        if k in L_unmatched_plates:
+            L1.append(v)
+            L2.append(k) 
+    df_unmatched = pd.DataFrame(zip(L1, L2), columns=['Units', 'Plate_index'])
+    
+    
+    # Derivating numeric only plate indeces to fish locations Units_Locs_Raw db
+    def numeric_maker(L):
+        L = [''.join(re.findall(r'\d+', x)).lower() for x in L if x != None]
+        return L
+    L_matched_numeric = numeric_maker(L_matched_plates)
+    L_unmatched_numeric = numeric_maker(df_unmatched.loc[:, 'Plate_index'])
+    
+    # db to df
+    L_crews = cursor_brm.execute("SELECT Crews FROM Units_Locs_Raw").fetchall()
+    L_plates = cursor_brm.execute("SELECT Units_1 FROM Units_Locs_Raw").fetchall()
+    L_plates2 = cursor_brm.execute("SELECT Units_2 FROM Units_Locs_Raw").fetchall()
+    L_locs = cursor_brm.execute("SELECT Locs FROM Units_Locs_Raw").fetchall()
 
-        
-        
-    # pprint(L)
-    # pprint(len(L))
-        
-    # df = pd.DataFrame(zip(L_om_units, L_om_index), columns=['Units', 'Plate_index'])
-    # df = df.loc[df.Plate_index.isin(L_plates_ind)]
-    # print(df)
-    # print(df.describe())
-    # Get whatever is unmatched manually into a dict for names (crutch)
-    # Roll CD to subtitute untmached with names in L_unit
-    # Multiply by frac crew
-    # Populate L_loc by finding in location picking df
+    df_locs = pd.DataFrame(zip(L_crews, L_plates), columns=['Crews', 'Units_1'])
+    # substring to be searched
+    sub ='686'
+ 
+    # creating and passing series to new column
+    df_locs["Crews"]= df_locs["Units_1"].str.find(sub)
+    
+    pprint(df_locs)
 if __name__ == '__main__':
     main()

@@ -53,10 +53,10 @@ def main():
     L_dept = cursor_om.execute("SELECT Department FROM final_DB").fetchall()
     L_vehicle = cursor_om.execute("SELECT Vehicle FROM final_DB").fetchall()
     L_plate = cursor_om.execute("SELECT Plate FROM final_DB").fetchall()
-    L_vehicle_name = cursor_om.execute("SELECT Vehicle_name FROM final_DB").fetchall()
+    # L_vehicle_name = cursor_om.execute("SELECT Vehicle_name FROM final_DB").fetchall()
     L_plate_index = cursor_om.execute("SELECT Plate_index FROM final_DB").fetchall()
     L_loc_om = cursor_om.execute("SELECT Location_omnicomm FROM final_DB").fetchall()
-    L_loc_cits = cursor_om.execute("SELECT Location_cits FROM final_DB").fetchall()
+    # L_loc_cits = cursor_om.execute("SELECT Location_cits FROM final_DB").fetchall()
     L_nodata = cursor_om.execute("SELECT No_data FROM final_DB").fetchall()
     
     # Push all lists with L_mols_matched as Responsible
@@ -67,16 +67,14 @@ def main():
         Department text,
         Vehicle text, 
         Plate text, 
-        Vehicle_name text, 
         Plate_index text, 
         Location_omnicomm text, 
-        Location_cits text, 
         No_data text, 
         Responsible text)
                 """)
-    cursor_om.executemany("INSERT INTO final_DB VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", zip(L_dept, L_vehicle, L_plate, 
-                                                                                               L_vehicle_name, L_plate_index, L_loc_om,
-                                                                                               L_loc_cits, L_nodata, L_mols_matched))
+    cursor_om.executemany("INSERT INTO final_DB VALUES (?, ?, ?, ?, ?, ?, ?)", zip(L_dept, L_vehicle, L_plate, 
+                                                                                    L_plate_index, L_loc_om,
+                                                                                    L_nodata, L_mols_matched))
                                                                                             
     
     db_om.commit()

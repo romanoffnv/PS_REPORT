@@ -27,6 +27,7 @@ def main():
     plates4 = re.compile("\W\d+\s\d+\.\d+")
     plates5 = re.compile("\ДЭС.*")
     plates6 = re.compile("\дэс.*")
+    plates7 = re.compile("\D{2}\s\d+\s\d+")
     
     
     # Derivating plates from vehicles
@@ -35,10 +36,11 @@ def main():
                      ''.join(re.findall(plates3, x)) or 
                      ''.join(re.findall(plates4, x)) or
                      ''.join(re.findall(plates5, x)) or
-                     ''.join(re.findall(plates6, x)) for x in L_total_veh]
+                     ''.join(re.findall(plates6, x)) or
+                     ''.join(re.findall(plates7, x)) for x in L_total_veh]
 
 
-   
+    pprint(L_total_plate)
 
     # Turn plates into 123abc type
     def transform_plates(plates):
@@ -59,8 +61,8 @@ def main():
     for k, v in D_om_diesels.items():
         L_total_plates_ind = [''.join(x.replace(k, v)).strip() for x in L_total_plates_ind]
     
-    pprint(L_total_plates_ind)
-    pprint(len(L_total_plates_ind))
+    # pprint(L_total_plates_ind)
+    # pprint(len(L_total_plates_ind))
 
     
     
