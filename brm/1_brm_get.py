@@ -10,6 +10,8 @@ import itertools
 from itertools import groupby
 from collections import defaultdict
 from collections import Counter
+import win32com
+print(win32com.__gen_path__)
 
 # Get the Excel Application COM object
 xl = EnsureDispatch('Excel.Application')
@@ -36,13 +38,14 @@ def main():
             L_crew_names.append(ws.Cells(row, 1).Value)
         row += 1
         if 'Ловильный сервис' in str(ws.Cells(row, 1).Value):
+            L_block_rows.append(row) 
             break
 
     
     
     # The function returns the trucks from all blocks
     def data_acquirer(srow, erow, col):
-        
+        print(srow, erow)
         L = []
         row = srow
         while True:
@@ -54,7 +57,7 @@ def main():
         return L
 
     # Listing block beginning and block ending rows to be thrown as params into data_acquirer func
-    L_startIndex = L_block_rows[:-1]
+    L_startIndex = L_block_rows[:]
     L_endIndex = L_block_rows[1:]
     
     # Listing all trucks by blocks by running data data_acquirer func with block beg and end rows
@@ -63,16 +66,18 @@ def main():
         L_units.append(data_acquirer(j, k, 3))
         L_units2.append(data_acquirer(j, k, 4))
         L_locs.append(data_acquirer(j, k, 11))
-        
+    
+   
     
     L_group_len = []
-    for i in L_units:
+    for i in L_locs:
         L_group_len.append(len(i))
     
     
     L_crews = [(i + '**').split('**') * j for i, j in (zip(L_crew_names, L_group_len))]
     L_crews = list(itertools.chain.from_iterable(L_crews))
     L_crews = list(filter(None, L_crews))
+   
     
     
     wb.Close(True)
@@ -82,9 +87,11 @@ def main():
     L_units2 = list(itertools.chain.from_iterable(L_units2))
     L_locs = list(itertools.chain.from_iterable(L_locs))
     
+    
     # Build df for location picking
     df = pd.DataFrame(zip(L_crews, L_units, L_units2, L_locs), columns=['Crews', 'Units_1', 'Units_2', 'Locs'])
-    print(df)
+    # print(df)
+    
    
     # Post df to DB
     cursor.execute("DROP TABLE IF EXISTS Units_Locs_Raw")
