@@ -1,3 +1,4 @@
+import time
 import json
 import xlsxwriter
 from win32com.client.gencache import EnsureDispatch
@@ -28,8 +29,9 @@ cursor = db.cursor()
 pd.set_option('display.max_rows', None)
 
 def main():
-    # Get frac blocks
-    # Listing crew names and row numbers of the crew blocks
+    # Get blocks by frac crews
+    # Listing rows of the blocks by crews i.e. 'ГРП-1'
+    print('Listing rows of the blocks by crews i.e. ГРП-1')
     row = 4
     L_block_rows, L_crew_names = [], []
     while True:
@@ -43,9 +45,8 @@ def main():
 
     
     
-    # The function returns the trucks from all blocks
+    # The function returns the list of trucks from all frac crew blocks
     def data_acquirer(srow, erow, col):
-        print(srow, erow)
         L = []
         row = srow
         while True:
@@ -57,48 +58,59 @@ def main():
         return L
 
     # Listing block beginning and block ending rows to be thrown as params into data_acquirer func
+    print('Listing block beginning and block ending rows')
     L_startIndex = L_block_rows[:]
     L_endIndex = L_block_rows[1:]
     
-    # Listing all trucks by blocks by running data data_acquirer func with block beg and end rows
+    
+    # Listing all trucks and trailers by crew blocks by running data data_acquirer func with 
+    # block beginning and end rows
+    print('Listing all trucks and trailers by crew blocks')
+    # L_units - list for trucks, L_units2 - list for trailers
     L_units, L_units2, L_locs = [], [], []
     for j, k in zip(L_startIndex, L_endIndex):
         L_units.append(data_acquirer(j, k, 3))
         L_units2.append(data_acquirer(j, k, 4))
         L_locs.append(data_acquirer(j, k, 11))
     
-   
     
+    
+    # Listing lengths of block items by locations
     L_group_len = []
     for i in L_locs:
         L_group_len.append(len(i))
     
-    
+    # Stretching crews over locations blocks by multiplying crew name by block lengths
+    print('Stretching crews over locations blocks')
     L_crews = [(i + '**').split('**') * j for i, j in (zip(L_crew_names, L_group_len))]
     L_crews = list(itertools.chain.from_iterable(L_crews))
     L_crews = list(filter(None, L_crews))
    
     
-    
+    print('Closing xls file')
     wb.Close(True)
     xl.Quit()
     
+    # Unpacking block lists for trucks, trailers and locations
+    print('Unpacking block lists for trucks, trailers and locations')
     L_units = list(itertools.chain.from_iterable(L_units))
     L_units2 = list(itertools.chain.from_iterable(L_units2))
     L_locs = list(itertools.chain.from_iterable(L_locs))
     
     
-    # Build df for location picking
+    # Building df of raw data for to pick crew names and locations from later
+    print('Building df of raw data for to pick crew names and locations from later')
     df = pd.DataFrame(zip(L_crews, L_units, L_units2, L_locs), columns=['Crews', 'Units_1', 'Units_2', 'Locs'])
-    # print(df)
     
-   
-    # Post df to DB
+    # Posting df to DB
+    print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS Units_Locs_Raw")
     df.to_sql(name='Units_Locs_Raw', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
 
-
+    print('1_brm_get is complete')
 if __name__ == '__main__':
+    start_time = time.time()
     main()
+    print("--- %s seconds ---" % (time.time() - start_time))
