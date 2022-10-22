@@ -1,4 +1,6 @@
+from asyncio.windows_events import NULL
 import json
+from numpy import NaN
 import xlsxwriter
 from win32com.client.gencache import EnsureDispatch
 import os
@@ -28,7 +30,9 @@ def main():
     L_plates2 = cursor.execute("SELECT Units_2 FROM Units_Locs_Raw").fetchall()
     L_locs = cursor.execute("SELECT Locs FROM Units_Locs_Raw").fetchall()
     
-    # Fixing truck plates that don't have literals
+    
+    
+    # Fixing truck plates 
     # Crutch
     D_plates_fix = {
         '618':'в618нт186',
@@ -42,22 +46,45 @@ def main():
     for k, v in D_plates_fix.items():
         L_plates = [''.join(re.sub(k, v, x)).strip() if x != None and len(x) < 7 else x for x in L_plates ]
     
-    # Could be smth for fixing trailer plates too, as D_plates2_fix
+    
+    # Cleaning trailers
+    # Crutch
+    D_plates2_fix = {
+        '403 Аренда с ЮТС': '',   
+        'Насос ВД': '',   
+        'АДПМ': '',   
+        'АЦН-17': '',   
+        'Площадка': '',   
+        'Блендер': '',   
+    }
+
+    for k, v in D_plates2_fix.items():
+        L_plates2 = [''.join(re.sub(k, v, x)).strip() if x != None else x for x in L_plates2 ]
+
     
     # Bringing plates into A123MT186 format
     # Removing spaces in plates 
     L_plates = [''.join(re.sub('\s+', '', x)) if x != None else x for x in L_plates ]
     L_plates2 = [''.join(re.sub('\s+', '', x)) if x != None else x for x in L_plates2]
 
-    # Stripping locations
-    L_locs = [str(x).strip() for x in L_locs if x != None]
+    print(len(L_crews))
+    for c, u1, u2, l in zip(L_crews, L_plates, L_plates2, L_locs):
+        if u1 == NaN and u2 == NaN and l == NaN:
+            L_crews.remove(c)
+            L_plates.remove(u1)
+            L_plates2.remove(u2)
+            L_locs.remove(l)
+            
+    
     
     # Building Data Frame
     df = pd.DataFrame(zip(L_crews, L_plates, L_plates2, L_locs), columns=['Crews', 'Units_1', 'Units_2', 'Locs'])
+    # Drop rows with nulls in all columns other than 'Crews'
+    df = df.dropna( how='any', subset=['Units_1', 'Units_2', 'Locs'], thresh=1)
     
     # Posting df to DB
-    cursor.execute("DROP TABLE IF EXISTS Units_Locs_Raw")
-    df.to_sql(name='Units_Locs_Raw', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS Units_Locs_Fixed")
+    df.to_sql(name='Units_Locs_Fixed', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
 if __name__ == '__main__':
