@@ -66,11 +66,12 @@ def main():
     # Listing all trucks and trailers by crew blocks by running data data_acquirer func with 
     # block beginning and end rows
     print('Listing all trucks and trailers by crew blocks')
-    # L_units - list for trucks, L_units2 - list for trailers
-    L_units, L_units2, L_locs = [], [], []
+    # L_plates - list for trucks, L_plates2 - list for trailers
+    L_units, L_plates, L_plates2, L_locs = [], [], [], []
     for j, k in zip(L_startIndex, L_endIndex):
-        L_units.append(data_acquirer(j, k, 3))
-        L_units2.append(data_acquirer(j, k, 4))
+        L_units.append(data_acquirer(j, k, 2))
+        L_plates.append(data_acquirer(j, k, 3))
+        L_plates2.append(data_acquirer(j, k, 4))
         L_locs.append(data_acquirer(j, k, 11))
     
     
@@ -94,13 +95,14 @@ def main():
     # Unpacking block lists for trucks, trailers and locations
     print('Unpacking block lists for trucks, trailers and locations')
     L_units = list(itertools.chain.from_iterable(L_units))
-    L_units2 = list(itertools.chain.from_iterable(L_units2))
+    L_plates = list(itertools.chain.from_iterable(L_plates))
+    L_plates2 = list(itertools.chain.from_iterable(L_plates2))
     L_locs = list(itertools.chain.from_iterable(L_locs))
     
     
     # Building df of raw data for to pick crew names and locations from later
     print('Building df of raw data for to pick crew names and locations from later')
-    df = pd.DataFrame(zip(L_crews, L_units, L_units2, L_locs), columns=['Crews', 'Units_1', 'Units_2', 'Locs'])
+    df = pd.DataFrame(zip(L_crews, L_units, L_plates, L_plates2, L_locs), columns=['Crews', 'Units', 'Plates_1', 'Plates_2', 'Locs'])
     
     # Posting df to DB
     print('Posting df to DB')

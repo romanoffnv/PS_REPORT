@@ -26,8 +26,9 @@ pd.set_option('display.max_rows', None)
 def main():
     # Pulling Units_Locs_Raw.db into lists
     L_crews = cursor.execute("SELECT Crews FROM Units_Locs_Raw").fetchall()
-    L_plates = cursor.execute("SELECT Units_1 FROM Units_Locs_Raw").fetchall()
-    L_plates2 = cursor.execute("SELECT Units_2 FROM Units_Locs_Raw").fetchall()
+    L_units = cursor.execute("SELECT Units FROM Units_Locs_Raw").fetchall()
+    L_plates = cursor.execute("SELECT Plates_1 FROM Units_Locs_Raw").fetchall()
+    L_plates2 = cursor.execute("SELECT Plates_2 FROM Units_Locs_Raw").fetchall()
     L_locs = cursor.execute("SELECT Locs FROM Units_Locs_Raw").fetchall()
     
     
@@ -66,26 +67,18 @@ def main():
     # Removing spaces in plates 
     L_plates = [''.join(re.sub('\s+', '', x)) if x != None else x for x in L_plates ]
     L_plates2 = [''.join(re.sub('\s+', '', x)) if x != None else x for x in L_plates2]
-
-    print(len(L_crews))
-    for c, u1, u2, l in zip(L_crews, L_plates, L_plates2, L_locs):
-        if u1 == NaN and u2 == NaN and l == NaN:
-            L_crews.remove(c)
-            L_plates.remove(u1)
-            L_plates2.remove(u2)
-            L_locs.remove(l)
-            
-    
+ 
     
     # Building Data Frame
-    df = pd.DataFrame(zip(L_crews, L_plates, L_plates2, L_locs), columns=['Crews', 'Units_1', 'Units_2', 'Locs'])
+    df = pd.DataFrame(zip(L_crews, L_units, L_plates, L_plates2, L_locs), columns=['Crews', 'Units', 'Plates_1', 'Plates_2', 'Locs'])
     # Drop rows with nulls in all columns other than 'Crews'
-    df = df.dropna( how='any', subset=['Units_1', 'Units_2', 'Locs'], thresh=1)
+    df = df.dropna( how='any', subset=['Plates_1', 'Plates_2', 'Locs'], thresh=1)
     
     # Posting df to DB
     cursor.execute("DROP TABLE IF EXISTS Units_Locs_Fixed")
     df.to_sql(name='Units_Locs_Fixed', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
+    
 if __name__ == '__main__':
     main()
