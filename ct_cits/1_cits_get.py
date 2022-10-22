@@ -87,28 +87,13 @@ def main():
     # Building df
     df = pd.DataFrame(zip(L_crews, L_units, L_fields), columns=['Crews', 'Units', 'Fields'])
     
+    
     # Posting df to DB
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS Units_Locs_Raw")
     df.to_sql(name='Units_Locs_Raw', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
-    
-    
-    
-    
-    # # print(L_crews)
-    # # print(L_units)
-    # print(len(L_crews))
-    # print(len(L_units))
-    # df = pd.DataFrame(zip(L_units, L_crews, L_fields))
-    # # pprint(L_units)
-    # json.dump(L_units, open("L_ct_units.json", 'w'))
-    # json.dump(L_crews, open("L_ct_crews.json", 'w'))
-    # json.dump(L_fields, open("L_ct_fields.json", 'w'))
-   
-    
-   
     
     
 if __name__ == '__main__':
