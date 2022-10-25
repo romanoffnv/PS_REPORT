@@ -127,7 +127,7 @@ def main():
     for i in L_regex:
         L_plates =  plate_ripper(L_plates, i)
 
-    # Separating items which have 4 and 3 digit plates with no literals, to fish thos plates later
+    # Separating items which have 4 and 3 digit plates with no literals, to fish those plates later
     L_popped_4_3 = []
     num = 1
     while True:
@@ -142,8 +142,7 @@ def main():
     
     # Fishing 4 digit plates
     L_popped_4_3 =  plate_ripper(L_popped_4_3, '\d{4}')
-    pprint(L_popped_4_3)
-    pprint(len(L_popped_4_3))
+    
     
     # Separating 4 digit plates into list to avoid mess when fishing 3 digit plates later
     L_popped_4 = []
@@ -164,10 +163,50 @@ def main():
     
     # Merging all plates
     L_plates_all = L_plates + L_popped_4 + L_popped_3
-    pprint(L_plates_all)
-    pprint(len(L_plates_all))
+    L_plates = [x for x in L_plates_all]
     
+    # Removing items that have numbers, but are not plates
+    L_digits = [re.sub('\D+', '', x) for x in L_plates]
     
+    num = 0
+    while True:
+        for p, d in zip(L_plates, L_digits):
+            if len(d) < 3:
+                L_plates.remove(p)
+                L_digits.remove(d)
+        num+=1
+        if num == 5:
+            break  
+    
+    # Matching cleaned plates to units
+    L_units_temp = []
+    for p in L_plates:
+        for u in L_units:
+            if p in u:
+                L_units_temp.append(u)   
+                break 
+    L_units = [x for x in L_units_temp]
+    L_units_temp.clear()
+    
+    # pprint(len(L_plates))
+    # Collecting crews and locs
+    L_crws, L_lcs = [], []
+    for i in L_plates:
+        if cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
+            L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
+            L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
+        else:
+            print(i)
+
+    pprint(len(L_crws))
+    pprint(len(L_lcs))
+    
+    # df = pd.DataFrame(zip(L_units, L_plates))
+    # pprint(df)
+    # pprint(L_units_temp)
+    # pprint(len(L_units_temp))
+    
+    # pprint(L_digits)
 if __name__== '__main__':
     start_time = time.time()
     main()
