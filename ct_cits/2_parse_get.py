@@ -127,26 +127,46 @@ def main():
     for i in L_regex:
         L_plates =  plate_ripper(L_plates, i)
 
+    # Separating items which have 4 and 3 digit plates with no literals, to fish thos plates later
+    L_popped_4_3 = []
+    num = 1
+    while True:
+        for i in L_plates:
+            if i[0:3].isalpha() and 'ДЭС' not in str(i):
+                ind = L_plates.index(i)
+                L_popped_4_3.append(L_plates.pop(ind))
+        num +=1
+        if num == 5:
+            break
     
-    pprint(L_plates)
-    pprint(len(L_plates))
-
-    # for i in L_plates:
-    #     if sum(c.isdigit() for c in i) == 4:
-    #         print(i)
-        
-            
-    # L_plates1 = []
-    # for i in L_plates:
-    #     for j in L_regex:
-    #         if re.findall(j, i):
-    #             i = L_plates.index(i)
-    #             L_plates1.append(L_plates.pop(i))
-    #             break
-    # pprint(L_plates1)
-    # pprint(len(L_plates1))
-    # pprint(L_plates)
-    # pprint(len(L_plates))
+    
+    # Fishing 4 digit plates
+    L_popped_4_3 =  plate_ripper(L_popped_4_3, '\d{4}')
+    pprint(L_popped_4_3)
+    pprint(len(L_popped_4_3))
+    
+    # Separating 4 digit plates into list to avoid mess when fishing 3 digit plates later
+    L_popped_4 = []
+    num = 1
+    while True:
+        for i in L_popped_4_3:
+                if i.isnumeric():
+                    ind = L_popped_4_3.index(i)
+                    L_popped_4.append(L_popped_4_3.pop(ind))
+        num += 1
+        if num == 5:
+            break
+    
+    # Fishing 3 digit plates
+    L_popped_3 =  plate_ripper(L_popped_4_3, '\d{3}')
+    # Cleaning 3 digits off 'контейнер 2' smth
+    L_popped_3 = [x for x in L_popped_3 if str(x).isnumeric()]
+    
+    # Merging all plates
+    L_plates_all = L_plates + L_popped_4 + L_popped_3
+    pprint(L_plates_all)
+    pprint(len(L_plates_all))
+    
     
 if __name__== '__main__':
     start_time = time.time()
