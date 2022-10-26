@@ -23,9 +23,8 @@ cursor = db.cursor()
 
 def main():
      # Pulling Units_Locs_Raw.db into lists
-    L_crews = cursor.execute("SELECT Crews FROM Units_Locs_Raw").fetchall()
     L_units = cursor.execute("SELECT Units FROM Units_Locs_Raw").fetchall()
-    L_locs = cursor.execute("SELECT Fields FROM Units_Locs_Raw").fetchall()
+    
     
     # Cleaning L_units
     L_cleanwords = ['Цель работ:', 'профессия', 'Бурильщик', 'Пом.бур', 'Маш-т', '\n', 'гос№', 'гос',
@@ -99,114 +98,113 @@ def main():
     L_units = [x for x in L_units if x != '']
     L_units = [re.sub(r'\\', '', x) for x in L_units]
 
-    
+    print(f'initial {len(L_units)}')
+    L_units_original = [x for x in L_units]
+
     # Listing plate numbers from L_units
-    L_plates = [x for x in L_units]
-    
     def plate_ripper(L, regex):
-        L = [re.findall(regex, x) if re.findall(regex, x) else x for x in L]
+        L = [re.findall(regex, x) for x in L if re.findall(regex, x) ]
         L = [''.join([str(y) for y in x]) if isinstance(x, list) else x for x in L]
         return L
         
-    L_plates =  plate_ripper(L_units, '\D{2}\s\d+\s\d+')
-    L_regex = [ 
-                # Plates w/regions
-                '\w{2}\s*\d{4}\s*\d+', 
-                '\w{1}\s*\d{3}\s*\w{2}\s*\d+', '\d{4}\w{2}\s\d+', '\d{4}\s\w{2}\s\d+', '\d{4}\s\w{2}\s/\d+', 
-                '\w{1}\s\d{3}\s\w{2}\s\d+', '\d{4}\w{2}\d+', 
-                '\w{1}\d{3}\w{2}\d+', 
-                '\d{4}\s\w{2}\d+', 
-                # Crutch
-                '86\s\D{2}\s\d{4}', '\D{2}\s\d{2}\-\d{2}\s\d+',
+    # Fishing plates
+    L_plates1 = plate_ripper(L_units, '\w{2}\s*\d{4}\s*\d+')
+    L_plates2 = plate_ripper(L_units, '\w{1}\s*\d{3}\s*\w{2}\s*\d+')
+    
+    # with Crutch /
+    L_plates3 = plate_ripper(L_units, '\d{4}\s*\w{2}\s*\/*\d+')
+        
+    # Crutch
+    L_plates4 = plate_ripper(L_units,'86\s\D{2}\s\d{4}') 
+    L_plates5 = plate_ripper(L_units,'\D{2}\s\d{2}\-\d{2}\s\d+')
+    
                
-                # # Diesel stations
-                '\ДЭС\s\АД\s\d{2}\s\D\s\d{3}', '\инв\s*\d{4}',
-                # For digit numerals
-                
-                ]
-    for i in L_regex:
-        L_plates =  plate_ripper(L_plates, i)
+    # Diesel stations
+    L_plates6 = plate_ripper(L_units,'\ДЭС\s\АД\s\d{2}\s\D\s\d{3}') 
+    L_plates7 = plate_ripper(L_units,'\инв\s*\d{4}')
+    
 
-    # Separating items which have 4 and 3 digit plates with no literals, to fish those plates later
-    L_popped_4_3 = []
-    num = 1
-    while True:
-        for i in L_plates:
-            if i[0:3].isalpha() and 'ДЭС' not in str(i):
-                ind = L_plates.index(i)
-                L_popped_4_3.append(L_plates.pop(ind))
-        num +=1
-        if num == 5:
-            break
+    # Bitten Niva Crutch
+    L_plates8 = plate_ripper(L_units,'Е134КК')
+    
+    L_plates = L_plates1 + L_plates2 + L_plates3 + L_plates4 + L_plates5 + L_plates6 + L_plates7 + L_plates8
+    L_plates = list(set(L_plates))
     
     
-    # Fishing 4 digit plates
-    L_popped_4_3 =  plate_ripper(L_popped_4_3, '\d{4}')
+    # Popping collected plates from units, leaving items prepped for 4, 3 digit plates rip off
+    def plate_popper(num, L_plates, L_units):
+        while True:
+            for i in L_plates:
+                for j in L_units: 
+                    if i in j:
+                        ind = L_units.index(j)
+                        L_units.pop(ind)
+            num += 1
+            if num == 10:
+                break
+        return L_units
+
+    L_units = plate_popper(0, L_plates, L_units)
+    L_plates_4d =  plate_ripper(L_units, '\d{4}')
+    L_units = plate_popper(0, L_plates_4d, L_units)
+    L_plates_3d =  plate_ripper(L_units, '\d{3}')
+    L_units = plate_popper(0, L_plates_3d, L_units)
+    
+    L_plates = L_plates + L_plates_4d + L_plates_3d
+    L_plates = list(set(L_plates))
     
     
-    # Separating 4 digit plates into list to avoid mess when fishing 3 digit plates later
-    L_popped_4 = []
-    num = 1
-    while True:
-        for i in L_popped_4_3:
-                if i.isnumeric():
-                    ind = L_popped_4_3.index(i)
-                    L_popped_4.append(L_popped_4_3.pop(ind))
-        num += 1
-        if num == 5:
-            break
-    
-    # Fishing 3 digit plates
-    L_popped_3 =  plate_ripper(L_popped_4_3, '\d{3}')
-    # Cleaning 3 digits off 'контейнер 2' smth
-    L_popped_3 = [x for x in L_popped_3 if str(x).isnumeric()]
-    
-    # Merging all plates
-    L_plates_all = L_plates + L_popped_4 + L_popped_3
-    L_plates = [x for x in L_plates_all]
-    
-    # Removing items that have numbers, but are not plates
-    L_digits = [re.sub('\D+', '', x) for x in L_plates]
-    
-    num = 0
-    while True:
-        for p, d in zip(L_plates, L_digits):
-            if len(d) < 3:
-                L_plates.remove(p)
-                L_digits.remove(d)
-        num+=1
-        if num == 5:
-            break  
-    
-    # Matching cleaned plates to units
-    L_units_temp = []
-    for p in L_plates:
-        for u in L_units:
-            if p in u:
-                L_units_temp.append(u)   
-                break 
-    L_units = [x for x in L_units_temp]
-    L_units_temp.clear()
-    
-    # pprint(len(L_plates))
+   
     # Collecting crews and locs
-    L_crws, L_lcs = [], []
+    L_crws, L_lcs, L_unmatched = [], [], []
     for i in L_plates:
         if cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
             L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
             L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
         else:
-            print(i)
-
+            L_unmatched.append(i)
+            
+    
+    L_unmatched_4d =  plate_ripper(L_unmatched, '\d{4}')
+    L_unmatched = plate_popper(0, L_unmatched_4d, L_unmatched)
+    L_unmatched_3d =  plate_ripper(L_unmatched, '\d{3}')
+    L_unmatched = plate_popper(0, L_unmatched_3d, L_unmatched)
+    
+    L_unmatched_all = L_unmatched_4d + L_unmatched_3d
+    L_plates = L_plates + L_unmatched_all
+    
+    for i in L_unmatched_all:
+        if cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
+            L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
+            L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
+        else:
+            L_unmatched.append(i)
+    
+    # Recollecting units
+    
+    L_units.clear()
+    for i in L_plates:
+        for j in L_units_original:
+            if i in j:
+                L_units.append(j)
+                break
+    
     pprint(len(L_crws))
-    pprint(len(L_lcs))
-    
-    # df = pd.DataFrame(zip(L_units, L_plates))
+    pprint(len(L_units))
+    pprint(len(L_plates))
+    # df = pd.DataFrame(zip(L_crws, L_units, L_plates, L_lcs), columns=['Crews', 'Units', 'Plates', 'Locations'])
     # pprint(df)
-    # pprint(L_units_temp)
-    # pprint(len(L_units_temp))
     
-    # pprint(L_digits)
+    
+    # Posting df to DB
+    
+    # print('Posting df to DB')
+    # cursor.execute("DROP TABLE IF EXISTS Units_Locs_Parsed")
+    # df.to_sql(name='Units_Locs_Parsed', con=db, if_exists='replace', index=False)
+    # db.commit()
+    # db.close()
+    
+    
 if __name__== '__main__':
     start_time = time.time()
     main()
