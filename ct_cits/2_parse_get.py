@@ -157,14 +157,14 @@ def main():
    
     # Collecting crews and locs
     L_crws, L_lcs, L_unmatched = [], [], []
+    
     for i in L_plates:
-        if cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
-            L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
-            L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
+        if cursor.execute(f"SELECT Units FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
+            pass
         else:
             L_unmatched.append(i)
-            
     
+    # pprint(f'checkin plates: {len(L_plates)}')
     L_unmatched_4d =  plate_ripper(L_unmatched, '\d{4}')
     L_unmatched = plate_popper(0, L_unmatched_4d, L_unmatched)
     L_unmatched_3d =  plate_ripper(L_unmatched, '\d{3}')
@@ -173,14 +173,24 @@ def main():
     L_unmatched_all = L_unmatched_4d + L_unmatched_3d
     L_plates = L_plates + L_unmatched_all
     
-    for i in L_unmatched_all:
-        if cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
+    
+    for i in L_plates:
+        if cursor.execute(f"SELECT Units FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
+            print(i)
+            
             L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
             L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
-        else:
-            L_unmatched.append(i)
+        # else:
+            
+        #     L_unmatched.append(i + ' tracer')
     
     # Recollecting units
+    # for i in L_plates:
+    #     if cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
+    #         L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
+    #         L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
+    #     else:
+    #         L_unmatched.append(i)
     
     L_units.clear()
     for i in L_plates:
@@ -189,9 +199,12 @@ def main():
                 L_units.append(j)
                 break
     
-    pprint(len(L_crws))
-    pprint(len(L_units))
-    pprint(len(L_plates))
+    
+    
+    # pprint(len(L_crws))
+    # pprint(len(L_lcs))
+    # pprint(len(L_units))
+    # pprint(len(L_plates))
     # df = pd.DataFrame(zip(L_crws, L_units, L_plates, L_lcs), columns=['Crews', 'Units', 'Plates', 'Locations'])
     # pprint(df)
     
@@ -209,3 +222,4 @@ if __name__== '__main__':
     start_time = time.time()
     main()
     print("--- %s seconds ---" % (time.time() - start_time))
+
