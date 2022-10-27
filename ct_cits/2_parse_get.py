@@ -106,30 +106,44 @@ def main():
         L = [re.findall(regex, x) for x in L if re.findall(regex, x) ]
         L = [''.join([str(y) for y in x]) if isinstance(x, list) else x for x in L]
         return L
-        
+    def units_preserver(L, regex):
+        L = [x for x in L if re.findall(regex, x) ]
+        L = [''.join([str(y) for y in x]) if isinstance(x, list) else x for x in L]
+        return L
+
     # Fishing plates
     L_plates1 = plate_ripper(L_units, '\w{2}\s*\d{4}\s*\d+')
+    L_units1 = units_preserver(L_units, '\w{2}\s*\d{4}\s*\d+')
+
     L_plates2 = plate_ripper(L_units, '\w{1}\s*\d{3}\s*\w{2}\s*\d+')
+    L_units2 = units_preserver(L_units, '\w{1}\s*\d{3}\s*\w{2}\s*\d+')
+    
     
     # with Crutch /
     L_plates3 = plate_ripper(L_units, '\d{4}\s*\w{2}\s*\/*\d+')
-        
+    L_units3 = units_preserver(L_units, '\d{4}\s*\w{2}\s*\/*\d+')
+    
     # Crutch
-    L_plates4 = plate_ripper(L_units,'86\s\D{2}\s\d{4}') 
+    L_plates4 = plate_ripper(L_units,'86\s\D{2}\s\d{4}')
+    L_units4 = units_preserver(L_units, '86\s\D{2}\s\d{4}') 
+    
     L_plates5 = plate_ripper(L_units,'\D{2}\s\d{2}\-\d{2}\s\d+')
-           
+    L_units5 = units_preserver(L_units, '\D{2}\s\d{2}\-\d{2}\s\d+')
+    
     # Diesel stations
-    L_plates6 = plate_ripper(L_units,'\ДЭС\s\АД\s\d{2}\s\D\s\d{3}') 
+    L_plates6 = plate_ripper(L_units,'\ДЭС\s\АД\s\d{2}\s\D\s\d{3}')
+    L_units6 = units_preserver(L_units, '\ДЭС\s\АД\s\d{2}\s\D\s\d{3}') 
     L_plates7 = plate_ripper(L_units,'\инв\s*\d{4}')
+    L_units7 = units_preserver(L_units, '\инв\s*\d{4}') 
     
     # Bitten Niva Crutch
     L_plates8 = plate_ripper(L_units,'Е134КК')
-    
+    L_units8 = units_preserver(L_units, 'Е134КК') 
+
     L_plates = L_plates1 + L_plates2 + L_plates3 + L_plates4 + L_plates5 + L_plates6 + L_plates7 + L_plates8
-    L_plates = list(set(L_plates))
+    L_units_good = L_units1 + L_units2 + L_units3 + L_units4 + L_units5 + L_units6 + L_units7 + L_units8
     
-    
-    
+   
     # Function that pops plates with certain params from units list to avoid regex interference
     def plate_popper(num, L_plates, L_units):
         while True:
@@ -147,33 +161,52 @@ def main():
     L_units = plate_popper(0, L_plates, L_units)
     # Ripping off 4 digit non-conditioned plates
     L_plates_4d =  plate_ripper(L_units, '\d{4}')
+    L_units_4d = units_preserver(L_units, '\d{4}')
+     
     # Removing 4 digit non-cond plates not to interfere with pulling 3 digit nc plates
     L_units = plate_popper(0, L_plates_4d, L_units)
     # Ripping 3 digit nc plates
     L_plates_3d =  plate_ripper(L_units, '\d{3}')
+    L_units_3d = units_preserver(L_units, '\d{3}')
+   
     # Popping 3 digit nc plates, leaving basically trash
     L_units = plate_popper(0, L_plates_3d, L_units)
     
+    
     # Merging all types of plates, removing dubs
     L_plates = L_plates + L_plates_4d + L_plates_3d
-    L_plates = list(set(L_plates))
+    L_units = L_units_good + L_units_4d + L_units_3d
     
+    df = pd.DataFrame(zip(L_units, L_plates), columns=['Units', 'Plates'])
     
+    # Posting df to DB to be able to collect units later
+    # print('Posting df to DB')
+    cursor.execute("DROP TABLE IF EXISTS Units_Plates")
+    df.to_sql(name='Units_Plates', con=db, if_exists='replace', index=False)
+    db.commit()
+    
+
     # Collecting crews and locs
     L_crws, L_lcs, L_matched, L_unmatched = [], [], [] , []
     
-    # Checking if plates would match to db, sending them to matched and unmatched lists
+    # Checking if plates would match to db, sending them to matched and unmatched lists, Collecting units for unmatched plates
+    L_units_matched, L_units_umatched = [], []
     for i in L_plates:
         if cursor.execute(f"SELECT Units FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
             L_matched.append(i)
+            L_units_matched.append(cursor.execute(f"SELECT Units FROM Units_Plates WHERE Plates like '%{i}%'").fetchall())
         else:
             L_unmatched.append(i)
+            L_units_umatched.append(cursor.execute(f"SELECT Units FROM Units_Plates WHERE Plates like '%{i}%'").fetchall())
     
-    # L_matched 256
+    
+    # L_matched 366
     # L_unmatched 4
     # L_unmatched ['Н 397 КС 86', 'ДЭС АД 30 Т 400', 'инв 2219', 'инв 0002']
     
+    
     L_unmatched_4d =  plate_ripper(L_unmatched, '\d{4}')
+    # L_units_4d = units_preserver(L_units, '\d{3}')
     # L_unmatched_4d - ['2219', '0002']
     # L_unmatched ['инв 2219', 'инв 0002', 'Н 397 КС 86', 'ДЭС АД 30 Т 400']
     
@@ -189,7 +222,9 @@ def main():
     L_unmatched_all = L_unmatched_4d + L_unmatched_3d
     # pprint(L_unmatched_all) - ['0002', '2219', '397', '400']
     L_plates = L_matched + L_unmatched_all
-    # pprint(len(L_plates)) - 260
+    L_units = L_units_matched + L_units_umatched
+    
+    L_units = [', '.join(map(str, x)) for x in L_units]
     
     
     for i in L_plates:
@@ -198,25 +233,13 @@ def main():
             L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
         else:
             L_unmatched.append(i)
-            
-    # pprint(len(L_crws)) - 260
-    # pprint(len(L_lcs)) - 260
-    # pprint(len(L_unmatched)) - 0
-    
-    # Recollecting units
-    L_units.clear()
-    for i in L_plates:
-        for j in L_units_original:
-            if i in j:
-                L_units.append(j)
-                break
     
     # Unpacking nested lists
     L_crws = [', '.join(map(str, x)) for x in L_crws]
     L_lcs = [', '.join(map(str, x)) for x in L_lcs]
     
     df = pd.DataFrame(zip(L_crws, L_units, L_plates, L_lcs), columns=['Crews', 'Units', 'Plates', 'Locations'])
-    pprint(df)
+    # pprint(df)
     
     
     # Posting df to DB

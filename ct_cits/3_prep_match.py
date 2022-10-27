@@ -15,7 +15,7 @@ from collections import Counter
 
 
 # Making connections to DBs
-
+# connection to cits.db
 db = sqlite3.connect('cits.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
@@ -24,6 +24,7 @@ cursor = db.cursor()
 def main():
     L_locs = cursor.execute("SELECT Locations FROM Units_Locs_Parsed").fetchall()
     L_plates = cursor.execute("SELECT Plates FROM Units_Locs_Parsed").fetchall()
+    
 
     # Pre-cleaning fields
     L_locs = ['-' if v == 'None' else v for v in L_locs]
@@ -43,20 +44,20 @@ def main():
     L_cleanit = ['\-', '/']
     for i in L_cleanit:
         L_plates = [re.sub(i, '', x) for x in L_plates]
-    pprint(L_plates)
-    # Fix plates from dict that have been registered @ omnicomm
-    # D_plates = {
-    #     '694ПС': 'а694мв 186',
-    #     'ПС600': 'т600ак 186',
-    #     '86 УМ 8475': 'УМ 8475 86',
-    # }
-    # Open paranthesis like '(ПС197)'
-    # L_replacers = ['\(', '\ПС', '\)']
-    # for i in L_replacers:
-    #     L_plates = [''.join(re.sub(i, '', x)).strip() for x in L_plates]
+   
+    D_plates = {
+        '567': 'Е567НС 186',
+        '010': 'а010ук 186'
+    }
 
-    
-    
+    for k, v in D_plates.items():
+        for j in L_plates:
+            if k == j:
+                ind = L_plates.index(j)
+                L_plates[ind] = v
+                
+
+    pprint(L_plates)
 
 if __name__== '__main__':
     start_time = time.time()

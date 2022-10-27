@@ -11,6 +11,8 @@ import itertools
 from itertools import groupby
 from collections import defaultdict
 from collections import Counter
+import win32com
+print(win32com.__gen_path__)
 
 # Get the Excel Application COM object
 xl = EnsureDispatch('Excel.Application')
