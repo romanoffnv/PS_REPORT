@@ -40,18 +40,22 @@ def main():
     L_locs_temp.clear()
     
     # Clean plates
+    L_cleanit = ['\-', '/']
+    for i in L_cleanit:
+        L_plates = [re.sub(i, '', x) for x in L_plates]
+    pprint(L_plates)
     # Fix plates from dict that have been registered @ omnicomm
-    D_plates = {
-        '694ПС': 'а694мв 186',
-        'ПС600': 'т600ак 186',
-        '86 УМ 8475': 'УМ 8475 86',
-    }
+    # D_plates = {
+    #     '694ПС': 'а694мв 186',
+    #     'ПС600': 'т600ак 186',
+    #     '86 УМ 8475': 'УМ 8475 86',
+    # }
     # Open paranthesis like '(ПС197)'
     # L_replacers = ['\(', '\ПС', '\)']
     # for i in L_replacers:
     #     L_plates = [''.join(re.sub(i, '', x)).strip() for x in L_plates]
 
-    pprint(L_plates)
+    
     
 
 if __name__== '__main__':

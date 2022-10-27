@@ -117,13 +117,11 @@ def main():
     # Crutch
     L_plates4 = plate_ripper(L_units,'86\s\D{2}\s\d{4}') 
     L_plates5 = plate_ripper(L_units,'\D{2}\s\d{2}\-\d{2}\s\d+')
-    
-               
+           
     # Diesel stations
     L_plates6 = plate_ripper(L_units,'\ДЭС\s\АД\s\d{2}\s\D\s\d{3}') 
     L_plates7 = plate_ripper(L_units,'\инв\s*\d{4}')
     
-
     # Bitten Niva Crutch
     L_plates8 = plate_ripper(L_units,'Е134КК')
     
@@ -131,7 +129,8 @@ def main():
     L_plates = list(set(L_plates))
     
     
-    # Popping collected plates from units, leaving items prepped for 4, 3 digit plates rip off
+    
+    # Function that pops plates with certain params from units list to avoid regex interference
     def plate_popper(num, L_plates, L_units):
         while True:
             for i in L_plates:
@@ -144,54 +143,67 @@ def main():
                 break
         return L_units
 
+    # Removing all conditioned plates from units (not to interfere for 4 digit non-conditioned plates rip off)
     L_units = plate_popper(0, L_plates, L_units)
+    # Ripping off 4 digit non-conditioned plates
     L_plates_4d =  plate_ripper(L_units, '\d{4}')
+    # Removing 4 digit non-cond plates not to interfere with pulling 3 digit nc plates
     L_units = plate_popper(0, L_plates_4d, L_units)
+    # Ripping 3 digit nc plates
     L_plates_3d =  plate_ripper(L_units, '\d{3}')
+    # Popping 3 digit nc plates, leaving basically trash
     L_units = plate_popper(0, L_plates_3d, L_units)
     
+    # Merging all types of plates, removing dubs
     L_plates = L_plates + L_plates_4d + L_plates_3d
     L_plates = list(set(L_plates))
     
     
-   
     # Collecting crews and locs
-    L_crws, L_lcs, L_unmatched = [], [], []
+    L_crws, L_lcs, L_matched, L_unmatched = [], [], [] , []
     
+    # Checking if plates would match to db, sending them to matched and unmatched lists
     for i in L_plates:
         if cursor.execute(f"SELECT Units FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
-            pass
+            L_matched.append(i)
         else:
             L_unmatched.append(i)
     
-    # pprint(f'checkin plates: {len(L_plates)}')
+    # L_matched 256
+    # L_unmatched 4
+    # L_unmatched ['Н 397 КС 86', 'ДЭС АД 30 Т 400', 'инв 2219', 'инв 0002']
+    
     L_unmatched_4d =  plate_ripper(L_unmatched, '\d{4}')
+    # L_unmatched_4d - ['2219', '0002']
+    # L_unmatched ['инв 2219', 'инв 0002', 'Н 397 КС 86', 'ДЭС АД 30 Т 400']
+    
     L_unmatched = plate_popper(0, L_unmatched_4d, L_unmatched)
+    # pprint(L_unmatched) - ['ДЭС АД 30 Т 400', 'Н 397 КС 86']
+    
     L_unmatched_3d =  plate_ripper(L_unmatched, '\d{3}')
+    # pprint(L_unmatched_3d) - ['400', '397']
+    
     L_unmatched = plate_popper(0, L_unmatched_3d, L_unmatched)
+    # pprint(L_unmatched) - []
     
     L_unmatched_all = L_unmatched_4d + L_unmatched_3d
-    L_plates = L_plates + L_unmatched_all
+    # pprint(L_unmatched_all) - ['0002', '2219', '397', '400']
+    L_plates = L_matched + L_unmatched_all
+    # pprint(len(L_plates)) - 260
     
     
     for i in L_plates:
         if cursor.execute(f"SELECT Units FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
-            print(i)
-            
             L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
             L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
-        # else:
+        else:
+            L_unmatched.append(i)
             
-        #     L_unmatched.append(i + ' tracer')
+    # pprint(len(L_crws)) - 260
+    # pprint(len(L_lcs)) - 260
+    # pprint(len(L_unmatched)) - 0
     
     # Recollecting units
-    # for i in L_plates:
-    #     if cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
-    #         L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
-    #         L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
-    #     else:
-    #         L_unmatched.append(i)
-    
     L_units.clear()
     for i in L_plates:
         for j in L_units_original:
@@ -199,23 +211,21 @@ def main():
                 L_units.append(j)
                 break
     
+    # Unpacking nested lists
+    L_crws = [', '.join(map(str, x)) for x in L_crws]
+    L_lcs = [', '.join(map(str, x)) for x in L_lcs]
     
-    
-    # pprint(len(L_crws))
-    # pprint(len(L_lcs))
-    # pprint(len(L_units))
-    # pprint(len(L_plates))
-    # df = pd.DataFrame(zip(L_crws, L_units, L_plates, L_lcs), columns=['Crews', 'Units', 'Plates', 'Locations'])
-    # pprint(df)
+    df = pd.DataFrame(zip(L_crws, L_units, L_plates, L_lcs), columns=['Crews', 'Units', 'Plates', 'Locations'])
+    pprint(df)
     
     
     # Posting df to DB
     
-    # print('Posting df to DB')
-    # cursor.execute("DROP TABLE IF EXISTS Units_Locs_Parsed")
-    # df.to_sql(name='Units_Locs_Parsed', con=db, if_exists='replace', index=False)
-    # db.commit()
-    # db.close()
+    print('Posting df to DB')
+    cursor.execute("DROP TABLE IF EXISTS Units_Locs_Parsed")
+    df.to_sql(name='Units_Locs_Parsed', con=db, if_exists='replace', index=False)
+    db.commit()
+    db.close()
     
     
 if __name__== '__main__':
