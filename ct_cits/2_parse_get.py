@@ -172,20 +172,22 @@ def main():
     # Popping 3 digit nc plates, leaving basically trash
     L_units = plate_popper(0, L_plates_3d, L_units)
     
-    
+    # Adding extra space to 3d numbers to avoid multiple match as a substring of 4d ie 371 in 3714
+    L_plates_3d = [x + '  ' for x in L_plates_3d]
     # Merging all types of plates, removing dubs
     L_plates = L_plates + L_plates_4d + L_plates_3d
     L_units = L_units_good + L_units_4d + L_units_3d
     
     df = pd.DataFrame(zip(L_units, L_plates), columns=['Units', 'Plates'])
-    
+    df = df.drop_duplicates(subset='Plates', keep="first")
     # Posting df to DB to be able to collect units later
     # print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS Units_Plates")
     df.to_sql(name='Units_Plates', con=db, if_exists='replace', index=False)
     db.commit()
     
-
+    L_plates = df['Plates'].tolist()
+    
     # Collecting crews and locs
     L_crws, L_lcs, L_matched, L_unmatched = [], [], [] , []
     
@@ -199,7 +201,8 @@ def main():
             L_unmatched.append(i)
             L_units_umatched.append(cursor.execute(f"SELECT Units FROM Units_Plates WHERE Plates like '%{i}%'").fetchall())
     
-    
+    pprint(L_unmatched)
+    pprint(L_units_umatched)
     # L_matched 366
     # L_unmatched 4
     # L_unmatched ['Н 397 КС 86', 'ДЭС АД 30 Т 400', 'инв 2219', 'инв 0002']
