@@ -25,18 +25,19 @@ def main():
      # Pulling Units_Locs_Raw.db into lists
     L_units = cursor.execute("SELECT Units FROM Units_Locs_Raw").fetchall()
     
-    
     # Cleaning L_units
     L_cleanwords = ['Цель работ:', 'профессия', 'Бурильщик', 'Пом.бур', 'Маш-т', '\n', 'гос№', 'гос',
-                  '№', '\.', 'Вагоны:']
+                    # '№', 
+                    '\.', 'Вагоны:']
     for i in L_cleanwords:
         L_units = [re.sub(i, ' ', x).strip() for x in L_units if x != None]
     L_units = [x for x in L_units if x != '']
     
+    
     # Splitting merged cells
      # Inserting comma after the following items to split by later
     D_replacers = {
-        '\s+': ' ', 
+        # '\s+': ' ', 
         ';': ',', 
         '\+': ',', 
         'в пути': ',',
@@ -77,7 +78,7 @@ def main():
     for k, v in D_ct_replacers.items():
         L_units = [''.join(re.sub(k, v, x)).strip() for x in L_units ]
   
-    # Doing the rest of the splits to extract whatever is in paranthesis or slashed diesel stations
+    # This function splits merged strings by params
     def splitter(L, a, b, c):
         
         L = [re.sub(a, b, x) if c in str(x) else x for x in L]    
@@ -85,6 +86,7 @@ def main():
         L = list(itertools.chain.from_iterable(L))
         return L
     
+    # Splitting merged strings by sending to splitter function with params
     L_units = splitter(L_units, '\(', '\,(', 'ПС')    
     L_units = splitter(L_units, '\)', '\),', 'ПС')    
     L_units = splitter(L_units, '/', ',', 'ДЭС')    
@@ -192,17 +194,40 @@ def main():
     L_crws, L_lcs, L_matched, L_unmatched = [], [], [] , []
     
     # Checking if plates would match to db, sending them to matched and unmatched lists, Collecting units for unmatched plates
-    L_units_matched, L_units_umatched = [], []
+    L_units_matched, L_units_unmatched = [], []
     for i in L_plates:
         if cursor.execute(f"SELECT Units FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
             L_matched.append(i)
             L_units_matched.append(cursor.execute(f"SELECT Units FROM Units_Plates WHERE Plates like '%{i}%'").fetchall())
         else:
             L_unmatched.append(i)
-            L_units_umatched.append(cursor.execute(f"SELECT Units FROM Units_Plates WHERE Plates like '%{i}%'").fetchall())
+            L_units_unmatched.append(cursor.execute(f"SELECT Units FROM Units_Plates WHERE Plates like '%{i}%'").fetchall())
     
-    pprint(L_unmatched)
-    pprint(L_units_umatched)
+    # pprint(len(L_matched)) - 181
+    # pprint(len(L_units_matched)) - 181
+    # pprint(len(L_unmatched)) - 79
+    # pprint(len(L_units_umatched))  - 79
+    # pprint(L_unmatched)
+    L_plates = L_matched + L_unmatched
+    L_units = L_units_matched + L_units_unmatched
+    L_units = [', '.join(map(str, x)) for x in L_units]
+    df = pd.DataFrame(zip(L_units, L_plates))
+    # pprint(L_plates)
+    
+    for i in L_plates:
+        if cursor.execute(f"SELECT Units FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
+            L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
+            L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
+        else:
+            L_unmatched.append(i)
+            break
+    
+    
+    # Unpacking nested lists
+    # L_crws = [', '.join(map(str, x)) for x in L_crws]
+    # L_lcs = [', '.join(map(str, x)) for x in L_lcs]
+    
+    
     # L_matched 366
     # L_unmatched 4
     # L_unmatched ['Н 397 КС 86', 'ДЭС АД 30 Т 400', 'инв 2219', 'инв 0002']
@@ -224,10 +249,18 @@ def main():
     
     L_unmatched_all = L_unmatched_4d + L_unmatched_3d
     # pprint(L_unmatched_all) - ['0002', '2219', '397', '400']
-    L_plates = L_matched + L_unmatched_all
-    L_units = L_units_matched + L_units_umatched
     
-    L_units = [', '.join(map(str, x)) for x in L_units]
+    # pprint(len(L_plates))
+    # pprint(len(L_units))
+    # pprint(len(L_crws))
+    
+    # for i in L_unmatched_all:
+    #     L_units_umatched.append(cursor.execute(f"SELECT Units FROM Units_Plates WHERE Plates like '%{i}%'").fetchall())
+    # pprint(L_units_umatched)
+    # L_plates = L_matched + L_unmatched_all
+    # L_units = L_units_matched + L_units_umatched
+    
+    # L_units = [', '.join(map(str, x)) for x in L_units]
     
     
     for i in L_plates:
