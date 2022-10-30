@@ -82,11 +82,18 @@ def main():
         return plates
 
 
+    L_plates_ind = transform_plates(L_plates)
     
+    df = pd.DataFrame(zip(L_crews, L_units, L_plates, L_plates_ind, L_locs), columns=['Crews', 'Units', 'Plates', 'Plate_index', 'Locations'])
+    df = df.drop_duplicates(subset='Plate_index', keep="first")
+    print(df)
+     # Posting df to DB
+    print('Posting df to DB')
+    cursor.execute("DROP TABLE IF EXISTS Final_cits")
+    df.to_sql(name='Final_cits', con=db, if_exists='replace', index=False)
+    db.commit()
+    db.close()
     
-    
-
-    # zip(L_crews, L_units, L_plates, L_plates_ind, L_locs)
 if __name__== '__main__':
     start_time = time.time()
     main()

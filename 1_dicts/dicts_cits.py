@@ -80,5 +80,6 @@ D_ct_plates = {
         '179': 'Е179СУ 186',
         # Crutches for bitten plates:
         'Н764082': 'АН 7640 82',
-    }
+}
+
 json.dump(D_ct_plates, open( "D_ct_plates.json", 'w' ))
