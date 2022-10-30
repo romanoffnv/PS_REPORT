@@ -211,8 +211,11 @@ def main():
     
     # Listing plates from verified df (matched with units, no dubs)
     L_plates = df['Plates'].tolist()
-    L_plates = [str(x).strip() for x in L_plates]
     L_units = df['Units'].tolist()
+
+    # Stripping plates back to normal
+    L_plates = [str(x).strip() for x in L_plates]
+        
     # Collecting crews and locs
     L_crws, L_lcs = [], []
     L_plates_unmatched = []
@@ -223,19 +226,15 @@ def main():
         else:
             L_plates_unmatched.append(i)
             
-    pprint(L_plates_unmatched)
-    # Unpacking nested lists
     
+    # Unpacking nested lists
     L_crws = [', '.join(map(str, x)) for x in L_crws]
     L_lcs = [', '.join(map(str, x)) for x in L_lcs]
     
-    pprint(len(L_plates))
-    pprint(len(L_lcs))
     df = pd.DataFrame(zip(L_crws, L_units, L_plates, L_lcs), columns=['Crews', 'Units', 'Plates', 'Locations'])
     
     
     # Posting df to DB
-    
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS Units_Locs_Parsed")
     df.to_sql(name='Units_Locs_Parsed', con=db, if_exists='replace', index=False)
