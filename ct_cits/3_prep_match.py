@@ -71,7 +71,7 @@ def main():
                 
     # Turn plates into 123abc type
     def transform_plates(plates):
-        L_regions = [186, 86, 797, '02', '07', 82, 78, 54, 77, 126, 188, 89, 88, 174, 74, 158, 196, 156, 76]
+        L_regions = [186, 116, 86, 797, '02', '07', 82, 78, 54, 77, 126, 188, 89, 88, 174, 74, 158, 196, 156, 56, 76]
         
         for i in L_regions:
             plates = [x.removesuffix(str(i)).strip() if x != None and len(x) > 7 else x for x in plates]
