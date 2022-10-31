@@ -34,26 +34,29 @@ def main():
     df_om = pd.read_sql_query("SELECT * FROM Final_DB", cnx_om)
     # pprint(df_cits)
 
-    # Listing cits df
+    # Destructuring cits df
+    def cits_destructurer():
+        L1 = df_cits['Crews'].tolist()
+        L2 = df_cits['Units'].tolist()
+        L3 = df_cits['Plates'].tolist()
+        L4 = df_cits['Plate_index'].tolist()
+        L5 = df_cits['Locations'].tolist()
+        return L1, L2, L3, L4, L5
     
-    L_crews_cits = df_cits['Crews'].tolist()
-    L_units_cits = df_cits['Units'].tolist()
-    L_Plates_cits = df_cits['Plates'].tolist()
-    L_Plate_index_cits = df_cits['Plate_index'].tolist()
-    L_Locations_cits = df_cits['Locations'].tolist()
-
-    # Listing om 
+    L_all_cits = cits_destructurer()
+    
+    # Destructuring omnicomm df 
     L_Plate_dept_om = df_om['Department'].tolist()
+    L_units_om = df_om['Vehicle'].tolist()
+    L_Plates = df_om['Plate'].tolist()
     L_Plate_index_om = df_om['Plate_index'].tolist()
-    L_Plate_unit_om = df_om['Vehicle'].tolist()
+    L_Locs_om = df_om['Location_Omnicomm'].tolist()
+    L_nodata_om = df_om['No_data'].tolist()
     
-    L_matched_PInd = []
+    
     # Get matched plates
     def matcher(L_values):
-        L_Plate_index_om = df_om['Plate_index'].tolist()
-        L_Plate_index_cits = df_cits['Plate_index'].tolist()
-        
-        D = dict(zip(L_Plate_index_cits, L_values))
+        D = dict(zip(L_all_cits[3], L_values))
         L = []
         for i in L_Plate_index_om:
             if i in D.keys():
@@ -61,13 +64,75 @@ def main():
             else:
                 L.append('-')
         return L
-    L_matched_crews = matcher(L_crews_cits)
-    L_matched_units = matcher(L_units_cits)
-    L_matched_plates = matcher(L_Plates_cits)
-    L_matched_Locations = matcher(L_Locations_cits)
+    L_crews_cits = matcher(L_all_cits[0])
+    L_units_cits = matcher(L_all_cits[1])
+    L_Plates_cits = matcher(L_all_cits[2])
+    L_Plate_index_cits = matcher(L_all_cits[3])
+    L_Locations_cits = matcher(L_all_cits[4])
     
-    df = pd.DataFrame(zip(L_Plate_dept_om, L_Plate_unit_om, L_Plate_index_om, L_matched_crews, L_matched_units, L_matched_plates, L_matched_Locations))
-    print(df)
+    df_matched = pd.DataFrame(zip(
+                        # Omnicomm
+                        L_Plate_dept_om,
+                        L_units_om,
+                        L_Plates,
+                        L_Plate_index_om,
+                        L_Locs_om,
+                        L_nodata_om,
+                        # Cits
+                        L_crews_cits,
+                        L_units_cits,
+                        L_Plates_cits,
+                        L_Plate_index_cits,
+                        L_Locations_cits), columns= [
+                        # Omnicomm
+                        'Group', 
+                        'Units_om',
+                        'Plates_om',
+                        'PI_om',
+                        'Locs_om',
+                        'No_data',
+                        # Cits
+                        'Crews_ct',
+                        'Units_ct',
+                        'Plates_ct',
+                        'PI_ct',
+                        'Locs_ct',
+                        
+                        ])
+    
+    
+    # Get unmatched plates
+    def dismatcher(L_values):
+        D = dict(zip(L_all_cits[3], L_values))
+        L = []
+        for k, v in D.items():
+            if k not in L_Plate_index_om:
+                L.append(v)
+                
+        return L
+    
+    
+    L_crews_cits = dismatcher(L_all_cits[0])
+    L_units_cits = dismatcher(L_all_cits[1])
+    L_Plates_cits = dismatcher(L_all_cits[2])
+    L_Plate_index_cits = dismatcher(L_all_cits[3])
+    L_Locations_cits = dismatcher(L_all_cits[4])
+    
+    # Blanking out omnicomm cols for unmatched items by the length of Crew col
+    for i in L_crews_cits:
+        L_Plate_dept_om.append('-')
+    pprint(len(L_Plate_dept_om))
+    
+    # Omnicomm
+                        # L_Plate_dept_om,
+                        # L_units_om,
+                        # L_Plates,
+                        # L_Plate_index_om,
+                        # L_Locs_om,
+                        # L_nodata_om,
+    
+    # df_unmatched = pd.DataFrame(zip(L_crews_cits, L_units_cits, L_Plates_cits, L_Plate_index_cits, L_Locations_cits))
+    
     # L_unmatched_PInd, L_unmatched_Crews = [], []
     # # Get umatched plates
     # for k, v in D.items():
