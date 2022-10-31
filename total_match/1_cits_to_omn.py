@@ -25,8 +25,14 @@ db_om = sqlite3.connect('omnicomm.db')
 db_om.row_factory = lambda cursor, row: row[0]
 cursor_om = db_om.cursor()
 
+ # connection to match.db
+db_match = sqlite3.connect('match.db')
+db_match.row_factory = lambda cursor, row: row[0]
+cursor = db_match.cursor()
+
 cnx_cits = sqlite3.connect('cits.db')
 cnx_om = sqlite3.connect('omnicomm.db')
+cnx_match = sqlite3.connect('match.db')
 
 def main():
     # Get from cits.db
@@ -66,6 +72,7 @@ def main():
                 L.append(D.get(i))
             else:
                 L.append('-')
+            
         return L
     L_crews_cits = matcher(L_all_cits[0])
     L_units_cits = matcher(L_all_cits[1])
@@ -108,10 +115,12 @@ def main():
     # Get unmatched plates
     def dismatcher(L_values):
         D = dict(zip(L_all_cits[3], L_values))
+        
         L = []
         for k, v in D.items():
-            if k not in L_all_cits[3]:
+            if k not in L_all_om[3]:
                 L.append(v)
+                
                 
         return L
     
@@ -121,25 +130,21 @@ def main():
     L_Plates_cits = dismatcher(L_all_cits[2])
     L_Plate_index_cits = dismatcher(L_all_cits[3])
     L_Locations_cits = dismatcher(L_all_cits[4])
-    
+   
     # Blanking out omnicomm cols for unmatched items by the length of Crew col
-    
     for i in L_all_om:
         i.clear() 
-    pprint(L_all_om)
-    L_all_om[0].append('-')
-    pprint(L_all_om[0])
-    for i in L_crews_cits:
-        L_all_om[0].append(i)
+    
+    for i in range(0, len(L_crews_cits)):
+        L_all_om[0].append('-')
         L_all_om[1].append('-')
         L_all_om[2].append('-')
         L_all_om[3].append('-')
         L_all_om[4].append('-')
         L_all_om[5].append('-')
         
-    # Google append to the list number of times
     
-    pprint(L_all_om[0])
+   
     df_unmatched = pd.DataFrame(zip(
                         # Omnicomm
                         L_all_om[0],
@@ -170,12 +175,19 @@ def main():
                         'PI_ct',
                         'Locs_ct',]
     )
-    pprint(df_unmatched)
     
     
-    
+    df_total = pd.concat([df_matched, df_unmatched])
+        
+    # Posting df to DB
+    print('Posting df to DB')
+    cursor.execute("DROP TABLE IF EXISTS om_cits")
+    df_total.to_sql(name='om_cits', con=db_match, if_exists='replace', index=False)
+    db_match.commit()
+    db_match.close()
 
-
+    df_match = pd.read_sql_query("SELECT * FROM om_cits", cnx_match)
+    pprint(df_match)
 if __name__== '__main__':
     start_time = time.time()
     main()
