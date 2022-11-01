@@ -19,8 +19,8 @@ def main():
     L_vehicles, L_locations = [], []
     row = 10
     while ws.Cells(row, 1).Value != None:
-        L_vehicles.append(ws.Cells(row, 1).Value)
-        L_locations.append(ws.Cells(row, 2).Value)
+        L_locations.append(ws.Cells(row, 1).Value)
+        L_vehicles.append(ws.Cells(row, 2).Value)
         row += 1
     # removing duplicated spaces (xls file has some items with duplicated spaces)
     L_vehicles = [re.sub('\s+', ' ', x) for x in L_vehicles]

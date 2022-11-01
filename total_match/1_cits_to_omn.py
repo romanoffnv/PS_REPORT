@@ -1,4 +1,3 @@
-from sys import prefix
 import time
 import json
 import xlsxwriter
@@ -93,7 +92,6 @@ def main():
                         L_crews_cits,
                         L_units_cits,
                         L_Plates_cits,
-                        L_Plate_index_cits,
                         L_Locations_cits), 
                         columns= [
                         # Omnicomm
@@ -107,7 +105,6 @@ def main():
                         'Crews_ct',
                         'Units_ct',
                         'Plates_ct',
-                        'PI_ct',
                         'Locs_ct',]
     )
     
@@ -158,7 +155,6 @@ def main():
                         L_crews_cits,
                         L_units_cits,
                         L_Plates_cits,
-                        L_Plate_index_cits,
                         L_Locations_cits), 
                         columns= [
                         # Omnicomm
@@ -172,13 +168,13 @@ def main():
                         'Crews_ct',
                         'Units_ct',
                         'Plates_ct',
-                        'PI_ct',
                         'Locs_ct',]
     )
     
     
-    df_total = pd.concat([df_matched, df_unmatched])
-        
+    # df_total = pd.concat([df_matched, df_unmatched])
+    df_total = pd.merge(df_matched, df_unmatched, how="outer")  
+    pprint(df_total)
     # Posting df to DB
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS om_cits")
@@ -186,8 +182,12 @@ def main():
     db_match.commit()
     db_match.close()
 
-    df_match = pd.read_sql_query("SELECT * FROM om_cits", cnx_match)
-    pprint(df_match)
+    writer = pd.ExcelWriter('DB.xlsx', engine='xlsxwriter')
+    # Write each dataframe to a different worksheet.
+    # data.index += 1
+    df_total.to_excel(writer, index = True, header=True)
+    writer.save()
+
 if __name__== '__main__':
     start_time = time.time()
     main()
