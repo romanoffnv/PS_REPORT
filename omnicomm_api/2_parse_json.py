@@ -14,14 +14,8 @@ from collections import Counter
 import win32com
 print(win32com.__gen_path__)
 
-# Get the Excel Application COM object
-xl = EnsureDispatch('Excel.Application')
-wb = xl.Workbooks.Open(f"{os.getcwd()}\\1.xlsx")
-Sheets = wb.Sheets.Count
-ws = wb.Worksheets(Sheets)
 
 # Making connections to DBs
-
 db = sqlite3.connect('cits.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
@@ -180,14 +174,38 @@ def main():
 
     uts_units = get_units(units["children"][61]['objects'])
     uts_names = get_names(units["children"][61]['name'], uts_units)
-    pprint(uts_units)
-    pprint(uts_names)
-    pprint(len(uts_units))
-    pprint(len(uts_names))
-    check_units = get_units(units["children"][61]['objects'])
-    check_names = get_names(units["children"][61]['name'], ct_14_units)
-    pprint(check_units)
-    pprint(check_names)
+    
+    uts_cranes_units = get_units(units["children"][61]['children'][0]['objects'])
+    uts_cranes_names = get_names(units["children"][61]['name'], uts_cranes_units)
+
+    uts_tank10_units = get_units(units["children"][61]['children'][1]['objects'])
+    uts_tank10_names = get_names(units["children"][61]['name'], uts_tank10_units)
+    
+    uts_rentals_units = get_units(units["children"][61]['children'][2]['objects'])
+    uts_rentals_names = get_names(units["children"][61]['name'], uts_rentals_units)
+    
+    uts_atz_tanks_units = get_units(units["children"][61]['children'][3]['children'][0]['objects'])
+    uts_atz_tanks_names = get_names(units["children"][61]['name'], uts_atz_tanks_units)
+
+    uts_atz_kamaz_units = get_units(units["children"][61]['children'][3]['children'][1]['objects'])
+    uts_atz_kamaz_names = get_names(units["children"][61]['name'], uts_atz_kamaz_units)
+
+    uts_atz_trailer_units = get_units(units["children"][61]['children'][3]['children'][2]['objects'])
+    uts_atz_trailer_names = get_names(units["children"][61]['name'], uts_atz_trailer_units)
+
+    uts_atz_truck_units = get_units(units["children"][61]['children'][3]['children'][3]['objects'])
+    uts_atz_truck_names = get_names(units["children"][61]['name'], uts_atz_truck_units)
+    
+    uts_atz_ural_units = get_units(units["children"][61]['children'][3]['children'][4]['objects'])
+    uts_atz_ural_names = get_names(units["children"][61]['name'], uts_atz_ural_units)
+    pprint(uts_atz_ural_units)
+    pprint(uts_atz_ural_names)
+    pprint(len(uts_atz_ural_units))
+    pprint(len(uts_atz_ural_names))
+    # check_units = get_units(units["children"][61]['children'][0]['objects'])
+    # check_names = get_names(units["children"][61]['name'], ct_14_units)
+    # pprint(check_units)
+    # pprint(check_names)
 
     # nobeloil_units = get_units(units["children"][50]['objects'])
     # nobeloil_names = get_names(units["children"][50]['name'], nobeloil_units)
