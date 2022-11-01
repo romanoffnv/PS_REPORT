@@ -25,32 +25,37 @@ def main():
     units = json.load(open('JSON_om_units.json')) 
     online = json.load(open('JSON_om_online.json')) 
     
-    
-    
-    
-    L_units, L_names = [], []
-    def get_units(search):
-        L_units = []
-        for i in search:
-            L_units.append(i["name"])
-        return L_units
+   
+   
+    L_units, L_names, L_id = [], [], []
     def get_names(name, length):
         L_names = []
         for i in range(0, len(length)):
             L_names.append(name)
         L_names = [x.replace('\t', ' ') for x in L_names]
         return L_names
+    def get_units(search):
+        L_units = []
+        for i in search:
+            L_units.append(i["name"])
+        return L_units
+    # def get_id(search):
+    #     for i in search:
+    #         L_id.append((i['uuid']))
+    #     return L_id
+   
     
     # appending ungroupped units
     L_units.append(get_units(units["objects"]))
     L_names.append(get_names(units["name"], L_units)) 
+    # L_id.append(get_id(units["objects"])) 
     
     # appending groups that don't have nested groups (i.e Toyota, Frac, ct)
     for i in range(0, 61):
         L_units.append(get_units(units["children"][i]['objects']))
-        
     for i in range(0, 61):
         L_names.append(get_names(units["children"][i]['name'], L_units[i]))
+    
     
     L_units = list(itertools.chain.from_iterable(L_units))
     L_names = list(itertools.chain.from_iterable(L_names))
@@ -168,24 +173,24 @@ def main():
     df63 = pd.DataFrame(zip(L_names, L_units), columns = ['Groups', 'Units'])
     df = pd.merge(df, df63, how="outer")
     df = df.drop_duplicates(subset='Units', keep="last")
-    pprint(df)
+   
     
     # checking paths
-    df = pd.DataFrame(list(units.items()))
-    df = pd.DataFrame(list(units["children"][62]['children'][0]))
+    # df = pd.DataFrame(list(units.items()))
+    # df = pd.DataFrame(list(units["children"][62]['children'][0]))
     # df = pd.DataFrame(list(units["children"][61]['children'][3]['children'][0]['objects']))
     
     
-    print(df)
-    print(df.describe())
+    # print(df)
+    # print(df.describe())
     
     
-    # # Posting df to DB
-    # print('Posting df to DB')
-    # cursor.execute("DROP TABLE IF EXISTS Groups_units")
-    # df.to_sql(name='Groups_units', con=db, if_exists='replace', index=False)
-    # db.commit()
-    # db.close()
+    # Posting df to DB
+    print('Posting df to DB')
+    cursor.execute("DROP TABLE IF EXISTS Groups_units")
+    df.to_sql(name='Groups_units', con=db, if_exists='replace', index=False)
+    db.commit()
+    db.close()
 
     
     
