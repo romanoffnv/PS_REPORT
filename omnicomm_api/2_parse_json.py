@@ -16,7 +16,7 @@ print(win32com.__gen_path__)
 
 
 # Making connections to DBs
-db = sqlite3.connect('cits.db')
+db = sqlite3.connect('om.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
 
@@ -46,107 +46,146 @@ def main():
     L_names.append(get_names(units["name"], L_units)) 
     
     # appending groups that don't have nested groups (i.e Toyota, Frac, ct)
-    for i in range(0, 64):
+    for i in range(0, 61):
         L_units.append(get_units(units["children"][i]['objects']))
         
-    for i in range(0, 64):
+    for i in range(0, 61):
         L_names.append(get_names(units["children"][i]['name'], L_units[i]))
     
     L_units = list(itertools.chain.from_iterable(L_units))
     L_names = list(itertools.chain.from_iterable(L_names))
     
-    df = pd.DataFrame(zip(L_names, L_units))
-    print(df)
+    # appending groups with level 1 nested list (ООО Нефтемаш [60])
+    L_nested_units, L_nested_names = [], []
+    for i in range(0, 6):
+        L_nested_units.append(get_units(units["children"][60]['children'][i]['objects']))
+        
+    for i in range(0, 6):
+        L_nested_names.append(get_names(units["children"][60]['name'] + '. ' + units["children"][60]['children'][i]['name'], L_nested_units[i]))
     
-    # appending level 1 nested groups (ООО Нефтемаш)
-    # df = pd.DataFrame(list(units.items()))
-    # df = pd.DataFrame(list(units["children"][61]['objects']))
+    L_nested_units = list(itertools.chain.from_iterable(L_nested_units))
+    L_nested_names = list(itertools.chain.from_iterable(L_nested_names)) 
     
-    # print(df)
-    # print(df.describe())
+    # Merging dfs
+    df_nested = pd.DataFrame(zip(L_nested_names, L_nested_units), columns = ['Groups', 'Units'])
+    df = pd.DataFrame(zip(L_names, L_units), columns = ['Groups', 'Units'])
+    df = pd.merge(df, df_nested, how="outer")
     
-    check_units = get_units(units["children"][61]['children'][0]['objects'])
-    check_names = get_names(units["children"][61]['name'], L_units[:1])
-    df = pd.DataFrame(zip(check_names, check_units))
-    print(df)
+    # Collecting root folder for UTS [61]
+    L_units.clear()
+    L_names.clear()
+    L_units.append(get_units(units["children"][61]['objects']))
+    L_units = list(itertools.chain.from_iterable(L_units))
+    L_names.append(get_names(units["children"][61]['name'], L_units))
+    L_names = list(itertools.chain.from_iterable(L_names))
     
-    # L_units_nested, L_names_nested = [], []
-    # L_units_nested = get_units(units["children"][60]['objects'])
-    # L_names_nested = get_names(units["children"][60]['name'], L_uts_units)
-    # def nested_crasher_units(rng, path1, path2):
-    #     pprint(path1)
-    #     L_units_nested = []
-    #     for i in range(0, rng):
-    #         L_units_nested.append(get_units(path1 + [i] + path2))
-    #         # L_units_nested = list(itertools.chain.from_iterable(L_units_nested))
-    #     return L_units_nested
-    
-    # def nested_crasher_names(rng, ):
-    #         L_names_nested = []
-    #         for i in range(0, rng):
-    #             L_names_nested.append(get_names(units["children"][60]['name'], L_units_nested[i]))
-    #             L_names_nested = list(itertools.chain.from_iterable(L_names_nested))
-    #         return L_names_nested  
-    
-    # path1 = units["children"][60]['children']
-    # path2 = ['objects']
-    # L_units_nested =  nested_crasher_units(6, path1, path2) 
-    # pprint(L_units_nested)
-    
-    # L_units += L_units_nested
-    # L_names += L_names_nested
-    
-    # dealing with unrepeated unnested group (ЮТС root)
-    # L_uts_units = get_units(units["children"][61]['objects'])
-    # L_uts_names = get_names(units["children"][61]['name'], L_uts_units)
-    
-    # L_units += L_uts_units
-    # L_names += L_uts_names
-    
-    # dealing with uts level 1 nested groups
-    
-    
-    
+    # Mergin dfs
+    df61 = pd.DataFrame(zip(L_names, L_units), columns = ['Groups', 'Units'])
+    df = pd.merge(df, df61, how="outer")
    
+    # Horrible UTS
+    # appending groups with level 1 nested list (UTS [61])
+    L_nested_units.clear()
+    L_nested_names.clear()
+    for i in range(0, 13):
+        L_nested_units.append(get_units(units["children"][61]['children'][i]['objects']))
+        
+    for i in range(0, 13):
+        L_nested_names.append(get_names(units["children"][61]['name'] + '. ' + units["children"][61]['children'][i]['name'], L_nested_units[i]))
+    
+    L_nested_units = list(itertools.chain.from_iterable(L_nested_units))
+    L_nested_names = list(itertools.chain.from_iterable(L_nested_names)) 
+    
+    df_nested = pd.DataFrame(zip(L_nested_names, L_nested_units), columns = ['Groups', 'Units'])
+    df = pd.merge(df, df_nested, how="outer")
+    
+    # appending groups with level 3 nested list (UTS ATZ[61])
+    L_nested_units.clear()
+    L_nested_names.clear()
+    for i in range(0, 5):
+        L_nested_units.append(get_units(units["children"][61]['children'][3]['children'][i]['objects']))
+        
+    for i in range(0, 5):
+        L_nested_names.append(get_names(units["children"][61]['name'] + '. ' + units["children"][61]['children'][3]['children'][i]['name'], L_nested_units[i]))
+    
+    L_nested_units = list(itertools.chain.from_iterable(L_nested_units))
+    L_nested_names = list(itertools.chain.from_iterable(L_nested_names)) 
+    
+    df_nested = pd.DataFrame(zip(L_nested_names, L_nested_units), columns = ['Groups', 'Units'])
+    df = pd.merge(df, df_nested, how="outer")
+    
+    # appending groups with level 3 nested list (UTS special unit[61])
+    L_nested_units.clear()
+    L_nested_names.clear()
+    for i in range(0, 5):
+        L_nested_units.append(get_units(units["children"][61]['children'][11]['children'][i]['objects']))
+        
+    for i in range(0, 5):
+        L_nested_names.append(get_names(units["children"][61]['name'] + '. ' + units["children"][61]['children'][11]['children'][i]['name'], L_nested_units[i]))
+    
+    L_nested_units = list(itertools.chain.from_iterable(L_nested_units))
+    L_nested_names = list(itertools.chain.from_iterable(L_nested_names)) 
+    
+    df_nested = pd.DataFrame(zip(L_nested_names, L_nested_units), columns = ['Groups', 'Units'])
+    df = pd.merge(df, df_nested, how="outer")
+    
+    # Collecting root folder for Transportation service [62]
+    L_units.clear()
+    L_names.clear()
+    L_units.append(get_units(units["children"][62]['objects']))
+    L_units = list(itertools.chain.from_iterable(L_units))
+    L_names.append(get_names(units["children"][62]['name'], L_units))
+    L_names = list(itertools.chain.from_iterable(L_names))
+    
+    # Mergin dfs
+    df62 = pd.DataFrame(zip(L_names, L_units), columns = ['Groups', 'Units'])
+    df = pd.merge(df, df62, how="outer")
+    
+    # appending groups with level 1 nested list
+    L_nested_units.clear()
+    L_nested_names.clear()
+    for i in range(0, 10):
+        L_nested_units.append(get_units(units["children"][62]['children'][i]['objects']))
+        
+    for i in range(0, 10):
+        L_nested_names.append(get_names(units["children"][62]['name'] + '. ' + units["children"][62]['children'][i]['name'], L_nested_units[i]))
+    
+    L_nested_units = list(itertools.chain.from_iterable(L_nested_units))
+    L_nested_names = list(itertools.chain.from_iterable(L_nested_names)) 
+    
+    df_nested = pd.DataFrame(zip(L_nested_names, L_nested_units), columns = ['Groups', 'Units'])
+    df = pd.merge(df, df_nested, how="outer")
+    
+    # Collecting root Filatov [63]
+    L_units.clear()
+    L_names.clear()
+    L_units.append(get_units(units["children"][63]['objects']))
+    L_units = list(itertools.chain.from_iterable(L_units))
+    L_names.append(get_names(units["children"][63]['name'], L_units))
+    L_names = list(itertools.chain.from_iterable(L_names))
+    
+    # Mergin dfs
+    df63 = pd.DataFrame(zip(L_names, L_units), columns = ['Groups', 'Units'])
+    df = pd.merge(df, df63, how="outer")
+    df = df.drop_duplicates(subset='Units', keep="last")
+    pprint(df)
+    
+    # checking paths
+    df = pd.DataFrame(list(units.items()))
+    df = pd.DataFrame(list(units["children"][62]['children'][0]))
+    # df = pd.DataFrame(list(units["children"][61]['children'][3]['children'][0]['objects']))
     
     
+    print(df)
+    print(df.describe())
     
-    uts_cranes_units = get_units(units["children"][61]['children'][0]['objects'])
-    uts_cranes_names = get_names(units["children"][61]['name'], uts_cranes_units)
-
-    uts_tank10_units = get_units(units["children"][61]['children'][1]['objects'])
-    uts_tank10_names = get_names(units["children"][61]['name'], uts_tank10_units)
     
-    uts_rentals_units = get_units(units["children"][61]['children'][2]['objects'])
-    uts_rentals_names = get_names(units["children"][61]['name'], uts_rentals_units)
-    
-    uts_atz_tanks_units = get_units(units["children"][61]['children'][3]['children'][0]['objects'])
-    uts_atz_tanks_names = get_names(units["children"][61]['name'], uts_atz_tanks_units)
-
-    uts_atz_kamaz_units = get_units(units["children"][61]['children'][3]['children'][1]['objects'])
-    uts_atz_kamaz_names = get_names(units["children"][61]['name'], uts_atz_kamaz_units)
-
-    uts_atz_trailer_units = get_units(units["children"][61]['children'][3]['children'][2]['objects'])
-    uts_atz_trailer_names = get_names(units["children"][61]['name'], uts_atz_trailer_units)
-
-    uts_atz_truck_units = get_units(units["children"][61]['children'][3]['children'][3]['objects'])
-    uts_atz_truck_names = get_names(units["children"][61]['name'], uts_atz_truck_units)
-    
-    uts_atz_ural_units = get_units(units["children"][61]['children'][3]['children'][4]['objects'])
-    uts_atz_ural_names = get_names(units["children"][61]['name'], uts_atz_ural_units)
-    
-    # pprint(uts_atz_ural_units)
-    # pprint(uts_atz_ural_names)
-    # pprint(len(uts_atz_ural_units))
-    # pprint(len(uts_atz_ural_names))
-    # 
-    # pprint(check_units)
-    # pprint(check_names)
-
-    # nobeloil_units = get_units(units["children"][50]['objects'])
-    # nobeloil_names = get_names(units["children"][50]['name'], nobeloil_units)
-    # !Для просмотра ООО "Няганьнефть"
-    # "РН-Пурнефтегаз"
+    # # Posting df to DB
+    # print('Posting df to DB')
+    # cursor.execute("DROP TABLE IF EXISTS Groups_units")
+    # df.to_sql(name='Groups_units', con=db, if_exists='replace', index=False)
+    # db.commit()
+    # db.close()
 
     
     
