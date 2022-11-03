@@ -16,14 +16,13 @@ print(win32com.__gen_path__)
 
 
 # Making connections to DBs
-db = sqlite3.connect('om.db')
+db = sqlite3.connect('omnicomm.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
 
 
 def main():
     units = json.load(open('JSON_om_units.json')) 
-    online = json.load(open('JSON_om_online.json')) 
     
     # Parser functions
     # Parser root function
@@ -122,6 +121,7 @@ def main():
     df = df.drop_duplicates(subset='id', keep="last")
    
     pprint(df)
+    
     # Posting df to DB
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS Groups_units")
