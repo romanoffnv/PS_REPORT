@@ -25,166 +25,103 @@ def main():
     units = json.load(open('JSON_om_units.json')) 
     online = json.load(open('JSON_om_online.json')) 
     
+    # Parser functions
+    # Parser root function
+    def root_parser(groupnum):
+        L1, L2, L3 = [], [], []
+        L_objects = units["children"][groupnum]['objects']
+        for i in L_objects:
+            L1.append(units["children"][groupnum]['name'])
+            L2.append(i['name'])
+            L3.append(i['uuid'])
+        return L1, L2, L3
    
-   
-    L_units, L_names, L_id = [], [], []
-    def get_names(name, length):
-        L_names = []
-        for i in range(0, len(length)):
-            L_names.append(name)
-        L_names = [x.replace('\t', ' ') for x in L_names]
-        return L_names
-    def get_units(search):
-        L_units = []
-        for i in search:
-            L_units.append(i["name"])
-        return L_units
-    # def get_id(search):
-    #     for i in search:
-    #         L_id.append((i['uuid']))
-    #     return L_id
-   
+     # Parser nested level 1
+    def level1_parser(groupnum):
+        L1, L2, L3 = [], [], []
+        L_objects = units["children"][groupnum]['children']
+        
+        for i in L_objects:
+            for j in i['objects']:
+                L1.append(i['name'])
+                L2.append(j['name'])
+                L3.append(j['uuid'])
+        return L1, L2, L3
+
+     # Parser nested level 3
+    def level3_parser(groupnum, chldnum):
+        L1, L2, L3 = [], [], []    
+        L_objects = units["children"][groupnum]['children'][chldnum]['children']
+        for i in L_objects:
+            for j in i['objects']:
+                L1.append(i['name'])
+                L2.append(j['name'])
+                L3.append(j['uuid'])
+        return L1, L2, L3
+    
     
     # appending ungroupped units
-    L_units.append(get_units(units["objects"]))
-    L_names.append(get_names(units["name"], L_units)) 
-    # L_id.append(get_id(units["objects"])) 
-    
-    # appending groups that don't have nested groups (i.e Toyota, Frac, ct)
-    for i in range(0, 61):
-        L_units.append(get_units(units["children"][i]['objects']))
-    for i in range(0, 61):
-        L_names.append(get_names(units["children"][i]['name'], L_units[i]))
-    
-    
-    L_units = list(itertools.chain.from_iterable(L_units))
-    L_names = list(itertools.chain.from_iterable(L_names))
-    
-    # appending groups with level 1 nested list (ООО Нефтемаш [60])
-    L_nested_units, L_nested_names = [], []
-    for i in range(0, 6):
-        L_nested_units.append(get_units(units["children"][60]['children'][i]['objects']))
-        
-    for i in range(0, 6):
-        L_nested_names.append(get_names(units["children"][60]['name'] + '. ' + units["children"][60]['children'][i]['name'], L_nested_units[i]))
-    
-    L_nested_units = list(itertools.chain.from_iterable(L_nested_units))
-    L_nested_names = list(itertools.chain.from_iterable(L_nested_names)) 
-    
-    # Merging dfs
-    df_nested = pd.DataFrame(zip(L_nested_names, L_nested_units), columns = ['Groups', 'Units'])
-    df = pd.DataFrame(zip(L_names, L_units), columns = ['Groups', 'Units'])
-    df = pd.merge(df, df_nested, how="outer")
-    
-    # Collecting root folder for UTS [61]
-    L_units.clear()
-    L_names.clear()
-    L_units.append(get_units(units["children"][61]['objects']))
-    L_units = list(itertools.chain.from_iterable(L_units))
-    L_names.append(get_names(units["children"][61]['name'], L_units))
-    L_names = list(itertools.chain.from_iterable(L_names))
-    
-    # Mergin dfs
-    df61 = pd.DataFrame(zip(L_names, L_units), columns = ['Groups', 'Units'])
-    df = pd.merge(df, df61, how="outer")
-   
-    # Horrible UTS
-    # appending groups with level 1 nested list (UTS [61])
-    L_nested_units.clear()
-    L_nested_names.clear()
-    for i in range(0, 13):
-        L_nested_units.append(get_units(units["children"][61]['children'][i]['objects']))
-        
-    for i in range(0, 13):
-        L_nested_names.append(get_names(units["children"][61]['name'] + '. ' + units["children"][61]['children'][i]['name'], L_nested_units[i]))
-    
-    L_nested_units = list(itertools.chain.from_iterable(L_nested_units))
-    L_nested_names = list(itertools.chain.from_iterable(L_nested_names)) 
-    
-    df_nested = pd.DataFrame(zip(L_nested_names, L_nested_units), columns = ['Groups', 'Units'])
-    df = pd.merge(df, df_nested, how="outer")
-    
-    # appending groups with level 3 nested list (UTS ATZ[61])
-    L_nested_units.clear()
-    L_nested_names.clear()
-    for i in range(0, 5):
-        L_nested_units.append(get_units(units["children"][61]['children'][3]['children'][i]['objects']))
-        
-    for i in range(0, 5):
-        L_nested_names.append(get_names(units["children"][61]['name'] + '. ' + units["children"][61]['children'][3]['children'][i]['name'], L_nested_units[i]))
-    
-    L_nested_units = list(itertools.chain.from_iterable(L_nested_units))
-    L_nested_names = list(itertools.chain.from_iterable(L_nested_names)) 
-    
-    df_nested = pd.DataFrame(zip(L_nested_names, L_nested_units), columns = ['Groups', 'Units'])
-    df = pd.merge(df, df_nested, how="outer")
-    
-    # appending groups with level 3 nested list (UTS special unit[61])
-    L_nested_units.clear()
-    L_nested_names.clear()
-    for i in range(0, 5):
-        L_nested_units.append(get_units(units["children"][61]['children'][11]['children'][i]['objects']))
-        
-    for i in range(0, 5):
-        L_nested_names.append(get_names(units["children"][61]['name'] + '. ' + units["children"][61]['children'][11]['children'][i]['name'], L_nested_units[i]))
-    
-    L_nested_units = list(itertools.chain.from_iterable(L_nested_units))
-    L_nested_names = list(itertools.chain.from_iterable(L_nested_names)) 
-    
-    df_nested = pd.DataFrame(zip(L_nested_names, L_nested_units), columns = ['Groups', 'Units'])
-    df = pd.merge(df, df_nested, how="outer")
-    
-    # Collecting root folder for Transportation service [62]
-    L_units.clear()
-    L_names.clear()
-    L_units.append(get_units(units["children"][62]['objects']))
-    L_units = list(itertools.chain.from_iterable(L_units))
-    L_names.append(get_names(units["children"][62]['name'], L_units))
-    L_names = list(itertools.chain.from_iterable(L_names))
-    
-    # Mergin dfs
-    df62 = pd.DataFrame(zip(L_names, L_units), columns = ['Groups', 'Units'])
-    df = pd.merge(df, df62, how="outer")
-    
-    # appending groups with level 1 nested list
-    L_nested_units.clear()
-    L_nested_names.clear()
-    for i in range(0, 10):
-        L_nested_units.append(get_units(units["children"][62]['children'][i]['objects']))
-        
-    for i in range(0, 10):
-        L_nested_names.append(get_names(units["children"][62]['name'] + '. ' + units["children"][62]['children'][i]['name'], L_nested_units[i]))
-    
-    L_nested_units = list(itertools.chain.from_iterable(L_nested_units))
-    L_nested_names = list(itertools.chain.from_iterable(L_nested_names)) 
-    
-    df_nested = pd.DataFrame(zip(L_nested_names, L_nested_units), columns = ['Groups', 'Units'])
-    df = pd.merge(df, df_nested, how="outer")
-    
-    # Collecting root Filatov [63]
-    L_units.clear()
-    L_names.clear()
-    L_units.append(get_units(units["children"][63]['objects']))
-    L_units = list(itertools.chain.from_iterable(L_units))
-    L_names.append(get_names(units["children"][63]['name'], L_units))
-    L_names = list(itertools.chain.from_iterable(L_names))
-    
-    # Mergin dfs
-    df63 = pd.DataFrame(zip(L_names, L_units), columns = ['Groups', 'Units'])
-    df = pd.merge(df, df63, how="outer")
-    df = df.drop_duplicates(subset='Units', keep="last")
+    L_units, L_names, L_id = [], [], []
+    L_objects = units["objects"]
+    for i in L_objects:
+        L_names.append(units['name'])
+        L_units.append(i['name'])
+        L_id.append(i['uuid'])
+ 
+    df_ungroupped = pd.DataFrame(zip(L_names, L_units, L_id), columns = ['Groups', 'Units', 'id'])
+
    
     
-    # checking paths
-    # df = pd.DataFrame(list(units.items()))
-    # df = pd.DataFrame(list(units["children"][62]['children'][0]))
-    # df = pd.DataFrame(list(units["children"][61]['children'][3]['children'][0]['objects']))
+    # Parsing all groups without nested lists
+    L_all_obj, L_all_names, L_all_units, L_all_uuid = [], [], [], []
+    for i in range(0, 64):
+        L_all_obj.append(root_parser(i))
     
+    for i in L_all_obj:
+        L_all_names.append(i[0])
+        L_all_units.append(i[1])
+        L_all_uuid.append(i[2])
+    L_all_names = list(itertools.chain.from_iterable(L_all_names))
+    L_all_units = list(itertools.chain.from_iterable(L_all_units))
+    L_all_uuid = list(itertools.chain.from_iterable(L_all_uuid))
+
+    df_all_root = pd.DataFrame(zip(L_all_names, L_all_units, L_all_uuid), columns = ['Groups', 'Units', 'id'])
+    df = pd.merge(df_ungroupped, df_all_root, how="outer")
     
-    # print(df)
-    # print(df.describe())
+    # Parsing nested neftemash
+    df_nested_neftemash = level1_parser(60)
+    df_nested_neftemash = pd.DataFrame(zip(df_nested_neftemash[0], df_nested_neftemash[1], df_nested_neftemash[2]), columns = ['Groups', 'Units', 'id'])
+    df = pd.merge(df, df_nested_neftemash, how="outer")
     
+    # Parsing nested uts
+    # Level 1
+    uts_level1 = level1_parser(61)  
+    df_uts_level1 = pd.DataFrame(zip(uts_level1[0], uts_level1[1], uts_level1[2]), columns = ['Groups', 'Units', 'id'])
+    df = pd.merge(df, df_uts_level1, how="outer")
+
+    # Level 3
+    uts_atz = level3_parser(61, 3) 
+    uts_drvs_ident = level3_parser(61, 6) 
+    uts_spec_units = level3_parser(61, 11) 
     
+    L_alllev3_names = [uts_atz[0] + uts_drvs_ident[0] + uts_spec_units[0]]
+    L_alllev3_units = [uts_atz[1] + uts_drvs_ident[1] + uts_spec_units[1]]
+    L_alllev3_uuid = [uts_atz[2] + uts_drvs_ident[2] + uts_spec_units[2]]
+    L_alllev3_names = list(itertools.chain.from_iterable(L_alllev3_names))
+    L_alllev3_units = list(itertools.chain.from_iterable(L_alllev3_units))
+    L_alllev3_uuid = list(itertools.chain.from_iterable(L_alllev3_uuid))
+    
+    df_lev3 = pd.DataFrame(zip(L_alllev3_names, L_alllev3_units, L_alllev3_uuid), columns = ['Groups', 'Units', 'id'])
+    df = pd.merge(df, df_lev3, how="outer")
+    
+    # Parsing nested trasportation dept
+    trans_lev1 = level1_parser(62)
+    
+    df_trans = pd.DataFrame(zip(trans_lev1[0], trans_lev1[1], trans_lev1[2]), columns = ['Groups', 'Units', 'id'])
+    df = pd.merge(df, df_trans, how="outer")
+    df = df.drop_duplicates(subset='id', keep="last")
+   
+    pprint(df)
     # Posting df to DB
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS Groups_units")
