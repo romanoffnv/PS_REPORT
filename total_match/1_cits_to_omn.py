@@ -36,7 +36,7 @@ cnx_match = sqlite3.connect('match.db')
 def main():
     # Get from cits.db
     df_cits = pd.read_sql_query("SELECT * FROM Final_cits", cnx_cits)
-    df_om = pd.read_sql_query("SELECT * FROM parse_plates", cnx_om)
+    df_om = pd.read_sql_query("SELECT * FROM Final_om", cnx_om)
     # pprint(df_cits)
 
     # Destructuring cits df
@@ -49,16 +49,17 @@ def main():
         return L0, L1, L2, L3, L4
     
     L_all_cits = cits_destructurer()
-    
+   
     # Destructuring omnicomm df 
     def om_destructurer():
-        L0 = df_om['Department'].tolist()
-        L1 = df_om['Vehicle'].tolist()
-        L2 = df_om['Plate'].tolist()
-        L3 = df_om['Plate_index'].tolist()
-        L4 = df_om['Location_Omnicomm'].tolist()
-        L5 = df_om['No_data'].tolist()
-        return L0, L1, L2, L3, L4, L5
+        L0 = df_om['Groups'].tolist()
+        L1 = df_om['Units'].tolist()
+        L2 = df_om['id'].tolist()
+        L3 = df_om['Status'].tolist()
+        L4 = df_om['Plates'].tolist()
+        L5 = df_om['PI'].tolist()
+        L6 = df_om['Locations'].tolist()
+        return L0, L1, L2, L3, L4, L5, L6
     
     L_all_om = om_destructurer()
     
@@ -76,7 +77,6 @@ def main():
     L_crews_cits = matcher(L_all_cits[0])
     L_units_cits = matcher(L_all_cits[1])
     L_Plates_cits = matcher(L_all_cits[2])
-    L_Plate_index_cits = matcher(L_all_cits[3])
     L_Locations_cits = matcher(L_all_cits[4])
     
     df_matched = pd.DataFrame(zip(
@@ -87,6 +87,7 @@ def main():
                         L_all_om[3],
                         L_all_om[4],
                         L_all_om[5],
+                        L_all_om[6],
                         
                         # Cits
                         L_crews_cits,
@@ -95,12 +96,13 @@ def main():
                         L_Locations_cits), 
                         columns= [
                         # Omnicomm
-                        'Group', 
+                        'Groups_om', 
                         'Units_om',
-                        'Plates_om',
+                        'id_om',
+                        'Status',
+                        'Plates',
                         'PI_om',
-                        'Locs_om',
-                        'No_data',
+                        'Locations_om',
                         # Cits
                         'Crews_ct',
                         'Units_ct',
@@ -125,7 +127,6 @@ def main():
     L_crews_cits = dismatcher(L_all_cits[0])
     L_units_cits = dismatcher(L_all_cits[1])
     L_Plates_cits = dismatcher(L_all_cits[2])
-    L_Plate_index_cits = dismatcher(L_all_cits[3])
     L_Locations_cits = dismatcher(L_all_cits[4])
    
     # Blanking out omnicomm cols for unmatched items by the length of Crew col
@@ -150,6 +151,7 @@ def main():
                         L_all_om[3],
                         L_all_om[4],
                         L_all_om[5],
+                        L_all_om[6],
                         
                         # Cits
                         L_crews_cits,
@@ -158,12 +160,14 @@ def main():
                         L_Locations_cits), 
                         columns= [
                         # Omnicomm
-                        'Group', 
+                        # Omnicomm
+                        'Groups_om', 
                         'Units_om',
-                        'Plates_om',
+                        'id_om',
+                        'Status',
+                        'Plates',
                         'PI_om',
-                        'Locs_om',
-                        'No_data',
+                        'Locations_om',
                         # Cits
                         'Crews_ct',
                         'Units_ct',

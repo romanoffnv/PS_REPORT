@@ -75,7 +75,7 @@ def main():
     
     df2 = pd.DataFrame(zip(L_plates, L_plates_ind), columns = ['Plates', 'PI'])
     
-    # Merge dfs by columns (on common column 'Status')
+    # Merge dfs by columns 
     df = df1.join(df2, how = 'left')
 
     pprint(df)
