@@ -124,8 +124,8 @@ def main():
     
     # Posting df to DB
     print('Posting df to DB')
-    cursor.execute("DROP TABLE IF EXISTS Groups_units")
-    df.to_sql(name='Groups_units', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS parse_trucks")
+    df.to_sql(name='parse_trucks', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
 
