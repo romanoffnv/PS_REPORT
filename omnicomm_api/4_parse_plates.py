@@ -19,6 +19,7 @@ print(win32com.__gen_path__)
 db = sqlite3.connect('omnicomm.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
+cnx = sqlite3.connect('omnicomm.db')
 
 
 def main():
@@ -27,10 +28,8 @@ def main():
     
     
     # Db into df
-    cnx = sqlite3.connect('omnicomm.db')
-    df1 = pd.read_sql_query("SELECT * FROM parse_status", cnx)
     
-
+    df1 = pd.read_sql_query("SELECT * FROM parse_status", cnx)
     
     # Fishing out plates by regex from long sentences
     # Slicing vehicles column(list) into plate, index, literal cols
@@ -73,11 +72,10 @@ def main():
     for k, v in D_om_diesels.items():
         L_plates_ind = [''.join(x.replace(k, v)).strip() for x in L_plates_ind]
     
-    # Merge dfs by columns (on common column 'Status')
+    
     df2 = pd.DataFrame(zip(L_plates, L_plates_ind), columns = ['Plates', 'PI'])
     
-    
-    
+    # Merge dfs by columns (on common column 'Status')
     df = df1.join(df2, how = 'left')
 
     pprint(df)

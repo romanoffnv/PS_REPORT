@@ -36,7 +36,7 @@ cnx_match = sqlite3.connect('match.db')
 def main():
     # Get from cits.db
     df_cits = pd.read_sql_query("SELECT * FROM Final_cits", cnx_cits)
-    df_om = pd.read_sql_query("SELECT * FROM Final_DB", cnx_om)
+    df_om = pd.read_sql_query("SELECT * FROM parse_plates", cnx_om)
     # pprint(df_cits)
 
     # Destructuring cits df
