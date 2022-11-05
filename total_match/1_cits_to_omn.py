@@ -67,9 +67,11 @@ def main():
     def matcher(L_values):
         D = dict(zip(L_all_cits[3], L_values))
         L = []
-        for i in L_all_om[3]:
+        L_mm = []
+        for i in L_all_om[5]:
             if i in D.keys():
                 L.append(D.get(i))
+                # L_mm.append(D.get(i))
             else:
                 L.append('-')
             
@@ -78,7 +80,8 @@ def main():
     L_units_cits = matcher(L_all_cits[1])
     L_Plates_cits = matcher(L_all_cits[2])
     L_Locations_cits = matcher(L_all_cits[4])
-    
+    pprint(len(L_crews_cits))
+   
     df_matched = pd.DataFrame(zip(
                         # Omnicomm
                         L_all_om[0],
@@ -117,7 +120,7 @@ def main():
         
         L = []
         for k, v in D.items():
-            if k not in L_all_om[3]:
+            if k not in L_all_om[5]:
                 L.append(v)
                 
                 
@@ -128,7 +131,8 @@ def main():
     L_units_cits = dismatcher(L_all_cits[1])
     L_Plates_cits = dismatcher(L_all_cits[2])
     L_Locations_cits = dismatcher(L_all_cits[4])
-   
+    pprint(len(L_crews_cits))
+    
     # Blanking out omnicomm cols for unmatched items by the length of Crew col
     for i in L_all_om:
         i.clear() 
@@ -140,6 +144,7 @@ def main():
         L_all_om[3].append('-')
         L_all_om[4].append('-')
         L_all_om[5].append('-')
+        L_all_om[6].append('-')
         
     
    
@@ -176,9 +181,10 @@ def main():
     )
     
     
+    
     # df_total = pd.concat([df_matched, df_unmatched])
     df_total = pd.merge(df_matched, df_unmatched, how="outer")  
-    pprint(df_total)
+    # pprint(df_total)
     # Posting df to DB
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS om_cits")

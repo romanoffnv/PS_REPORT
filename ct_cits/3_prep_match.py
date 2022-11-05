@@ -34,13 +34,8 @@ def main():
     L_locs = cursor.execute("SELECT Locations FROM Units_Locs_Parsed").fetchall()
     
     
-    # L_unit_om  = cursor_om.execute("SELECT Vehicle FROM final_DB").fetchall()
-    # L_plates_om = cursor_om.execute("SELECT Plate FROM final_DB").fetchall()
-
-    # df = pd.DataFrame(zip(L_unit_om, L_plates_om))
-    # print(df)
-
-    # Pre-cleaning fields
+    # Pre-cleaning 
+    L_units = [re.sub('\s+', ' ', x) for x in L_units]
     L_locs = ['-' if v == 'None' else v for v in L_locs]
 
     # Slicing field name (Ю/Приобское м/р\nООО "ГАЗПРОМНЕФТЬ-ХАНТОС" - Ю/Приобское м/р)
