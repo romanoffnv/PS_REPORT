@@ -49,6 +49,7 @@ def main():
         return L0, L1, L2, L3, L4
     
     L_all_cits = cits_destructurer()
+    
    
     # Destructuring omnicomm df 
     def om_destructurer():
@@ -63,6 +64,7 @@ def main():
     
     L_all_om = om_destructurer()
     
+    
     # Get matched plates
     def matcher(L_values):
         D = dict(zip(L_all_cits[3], L_values))
@@ -71,16 +73,20 @@ def main():
         for i in L_all_om[5]:
             if i in D.keys():
                 L.append(D.get(i))
-                # L_mm.append(D.get(i))
+                L_mm.append(D.get(i))
             else:
                 L.append('-')
             
         return L
+        # return L_mm
+    
     L_crews_cits = matcher(L_all_cits[0])
     L_units_cits = matcher(L_all_cits[1])
     L_Plates_cits = matcher(L_all_cits[2])
     L_Locations_cits = matcher(L_all_cits[4])
-    pprint(len(L_crews_cits))
+    
+    
+    L_matched =  matcher(L_all_cits[3])
    
     df_matched = pd.DataFrame(zip(
                         # Omnicomm
@@ -131,7 +137,10 @@ def main():
     L_units_cits = dismatcher(L_all_cits[1])
     L_Plates_cits = dismatcher(L_all_cits[2])
     L_Locations_cits = dismatcher(L_all_cits[4])
-    pprint(len(L_crews_cits))
+    pprint(f"this is the length of all ct units {len(L_all_cits[0])}")
+    pprint(f"this is the length of matched items {len(L_matched)}")
+    pprint(f"this is the length of calculated dismatched units {len(L_all_cits[0]) - len(L_matched)}")
+    pprint(f"this is the length of unmatched units from the func {len(L_crews_cits)}")
     
     # Blanking out omnicomm cols for unmatched items by the length of Crew col
     for i in L_all_om:
@@ -182,7 +191,8 @@ def main():
     
     
     
-    # df_total = pd.concat([df_matched, df_unmatched])
+    pprint(df_matched)
+    pprint(df_unmatched)
     df_total = pd.merge(df_matched, df_unmatched, how="outer")  
     # pprint(df_total)
     # Posting df to DB
