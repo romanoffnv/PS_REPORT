@@ -155,6 +155,12 @@ def main():
         'УМ730186': 'УМ7301 86',
         'УА517386': 'УА5173 86',
         'АХ862186': 'АХ8621 86',
+        'АУ723186': 'АУ7231 86',
+        'УА074186': 'УА0741 86',
+        'АХ656186': 'АХ6561 86',
+        'ТА029186': 'ТА0291 86',
+        'АУ624186': 'АУ6241 86',
+        'АХ668186': 'АХ6681 86',
         }        
         
     # Replacing crappy unit names into omnicomm smth
@@ -195,8 +201,11 @@ def main():
         L_PI_acc = [x.replace(k, v) for x in L_PI_acc]
 
     pprint(L_PI_acc)
+    for i in L_PI_acc:
+        if len(i) < 6:
+            print(i)
     df = pd.DataFrame(zip(L_mols, L_units, L_PI_acc), columns=['Mols', 'Units', 'PI'])
-    print(df)
+    # print(df)
     # Posting df to DB
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS accountance_2")
@@ -205,4 +214,6 @@ def main():
     db.close()
     
 if __name__ == '__main__':
+    start_time = time.time()
     main()
+    print("--- %s seconds ---" % (time.time() - start_time))

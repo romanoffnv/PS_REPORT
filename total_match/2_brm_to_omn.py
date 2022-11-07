@@ -106,7 +106,7 @@ def main():
                         'Status_om',
                         'Plates_om',
                         'PI_om',
-                        'Loctions_om',
+                        'Locs_om',
                         # Match ct
                         'Crews_ct',
                         'Units_ct',
