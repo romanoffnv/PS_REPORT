@@ -109,6 +109,7 @@ def main():
     
     
     df = pd.DataFrame(zip(L_crws, L_unts, L_plates3, L_plates_ind, L_lcs), columns=['Crews', 'Units', 'Plates', 'Plate_index', 'Locs'])
+    df = df.drop_duplicates(subset='Plate_index', keep="first")
     
     # df.sort_values('Crews')
     

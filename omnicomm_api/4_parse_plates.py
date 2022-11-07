@@ -41,6 +41,7 @@ def main():
     plates6 = re.compile("\дэс.*")
     plates7 = re.compile("\D{2}\s\d+\s\d+")
     
+    plates8 = re.compile("GH120530SM")
     
     # Derivating plates from vehicles
     L_plates = [''.join(re.findall(plates1, x)) or 
@@ -49,7 +50,8 @@ def main():
                      ''.join(re.findall(plates4, x)) or
                      ''.join(re.findall(plates5, x)) or
                      ''.join(re.findall(plates6, x)) or
-                     ''.join(re.findall(plates7, x)) for x in L_units]
+                     ''.join(re.findall(plates7, x)) or 
+                     ''.join(re.findall(plates8, x)) for x in L_units]
 
 
     # Turn plates into 123abc type
