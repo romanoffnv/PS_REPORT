@@ -1,3 +1,4 @@
+import time
 import xlsxwriter
 from win32com.client.gencache import EnsureDispatch
 import os
@@ -55,15 +56,10 @@ def main():
             counter += 1    
                 
         
-        sumL_counts = reduce(lambda x, y: x + y, L_counts)
+        # sumL_counts = reduce(lambda x, y: x + y, L_counts)
         
       
-        # print(f'this is mols len {len(L_mols_scratch)}')
-        # print(f'this is items len {len(L_items)}')
-        # print(f'this is sum of items  {sumL_counts}')
-        # print(f'this is the list of ranges {L_counts}')
-        # the last item of the L_counts list is 24, when should be 23 
-        # print(f'this is the length of ranges list {len(L_counts)}')
+      
         
         wb.Close(True)
         xl.Quit()
@@ -74,25 +70,17 @@ def main():
         L_mols = list(itertools.chain.from_iterable(L_mols))
         L_mols = list(filter(None, L_mols))
        
-       
-        # Post the data acquired into the db as accountance_1
-        cursor.execute("DROP TABLE IF EXISTS accountance_1;")
-        cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS accountance_1(
-                    Responsible text,
-                    Item text
-    
-                                )
-                    """)
-        cursor.executemany("INSERT INTO accountance_1 VALUES (?, ?)", zip(L_mols, L_items))
-        cursor.execute("DELETE FROM accountance_1 WHERE Item IS NULL OR trim(Item) = ''")
-    
+        df = pd.DataFrame(zip(L_mols, L_items), columns=['Mol', 'Unit'])
+        print(df)
+        # Posting df to DB
+        print('Posting df to DB')
+        cursor.execute("DROP TABLE IF EXISTS accountance_1")
+        df.to_sql(name='accountance_1', con=db, if_exists='replace', index=False)
         db.commit()
         db.close()
-
-
         
 
-
 if __name__ == '__main__':
+    start_time = time.time()
     main()
+    print("--- %s seconds ---" % (time.time() - start_time))
