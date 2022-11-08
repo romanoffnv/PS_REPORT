@@ -22,19 +22,22 @@ cursor = db.cursor()
 
 
 def main():
-    L1 = ['1', '2', '3', '4', '5']
-    L2 = ['1', '2', '3', '4', '5']
-    
-    L3 = ['a', 'b', 'c', 'd', 'e']
-    L4 = ['a', 'b', 'c', 'd', 'e']
-    
-    df1 = pd.DataFrame(zip(L1, L2), columns = ['A', 'B'])
-    df2 = pd.DataFrame(zip(L3, L4), columns = ['C', 'D'])
-    # df = pd.merge(df1, df2, how="outer")
-    df = df1.join(df2, how = 'left')
-    pprint(df)
-    
-
+    def df_merge():
+        L1 = ['1', '2', '3', '4', '5']
+        L2 = ['1', '2', '3', '4', '5']
+        
+        L3 = ['a', 'b', 'c', 'd', 'e']
+        L4 = ['a', 'b', 'c', 'd', 'e']
+        
+        df1 = pd.DataFrame(zip(L1, L2), columns = ['A', 'B'])
+        df2 = pd.DataFrame(zip(L3, L4), columns = ['C', 'D'])
+        # df = pd.merge(df1, df2, how="outer")
+        df = df1.join(df2, how = 'left')
+        pprint(df)
+    # df_merge()
+    def startswith():
+        print(range(10, 100))
+    startswith()
 if __name__== '__main__':
     start_time = time.time()
     main()

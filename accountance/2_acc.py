@@ -151,39 +151,27 @@ def main():
         '86УК7801': 'УК7801 86',
         '30АХ5970': 'АХ5970 30',
  
-        # ambiguos 86/186 region
-        # 'МА182186': 'МА1821 86',
-        # 'УМ730186': 'УМ7301 86',
-        # 'УА517386': 'УА5173 86',
-        # 'АХ862186': 'АХ8621 86',
-        # 'АУ723186': 'АУ7231 86',
-        # 'УА074186': 'УА0741 86',
-        # 'АХ656186': 'АХ6561 86',
-        # 'ТА029186': 'ТА0291 86',
-        # 'АУ624186': 'АУ6241 86',
-        # 'АХ668186': 'АХ6681 86',
+        
         }        
         
     # Replacing crappy unit names into omnicomm smth
-    for k, v in D_crutches.items():
-        L_units = [x.replace(k, v) for x in L_units]
+    # for k, v in D_crutches.items():
+    #     L_units = [x.replace(k, v) for x in L_units]
     L_units = [re.sub('\s', '', x) for x in L_units]
-    # pprint(L_units)
-    # Turn plates into 123abc type
-    # L_regions = [     70, 77, 90, 91, 94, 95, 126, 188, 89, 88, 174, 74, 158, 196, 156, 76]
+    for i in L_units:
+        # if i[0].isdigit():
+        # and str(i[2]).isalpha():
+            # print(i[0].isdigit())
+        print(type(i))
     # Turn plates into 123abc type
     def transform_plates(plates):
         L_regions_long = [126, 156, 158, 174, 186, 188, 196, 797]
-        L_regions_short = ['01', '02', '03', '04', '05', '06', '07', '09'
-                        #    , 10, 30, 31,
-                        #    52, 54, 57, 58, 74, 75, 76, 77, 78, 80, 82, 83, 86, 88, 89, 96
-                           ]
+        L_regions_short = ['01', '02', '03', '04', '05', '06', '07', '09']
         for i in L_regions_long:
             plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 9 else x for x in plates]
         for i in L_regions_short:
             plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 8 or 'kzн' in str(x) else x for x in plates]
         for i in range(10, 100):
-            pprint(i)
             plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 8 or 'kzн' in str(x) else x for x in plates]
         
         plates_numeric = [''.join(re.findall(r'\d+', x)).lower() for x in plates if x != None]
