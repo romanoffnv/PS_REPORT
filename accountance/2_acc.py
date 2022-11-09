@@ -154,15 +154,20 @@ def main():
         
         }        
         
-    # Replacing crappy unit names into omnicomm smth
-    # for k, v in D_crutches.items():
-    #     L_units = [x.replace(k, v) for x in L_units]
-    L_units = [re.sub('\s', '', x) for x in L_units]
+    # Replacing leading region in plates
+    
+    L_units_temp = []
+    L_units = [''.join(re.sub('\s', '', x)).strip() for x in L_units]
     for i in L_units:
-        # if i[0].isdigit():
-        # and str(i[2]).isalpha():
-            # print(i[0].isdigit())
-        print(type(i))
+        try:
+            if i[:1].isdigit() and str(i[2]).isalpha():
+                L_units_temp.append(i[2:] + i[:2])
+            else:
+                L_units_temp.append(i)
+        except IndexError:
+            L_units_temp.append(i)
+
+    L_units = [x for x in L_units_temp]
     # Turn plates into 123abc type
     def transform_plates(plates):
         L_regions_long = [126, 156, 158, 174, 186, 188, 196, 797]
@@ -201,12 +206,9 @@ def main():
     for k, v in D_crutches.items():
         L_PI_acc = [x.replace(k, v) for x in L_PI_acc]
 
-    # pprint(L_PI_acc)
-    # for i in L_PI_acc:
-    #     if len(i) < 6:
-    #         print(i)
+   
     df = pd.DataFrame(zip(L_mols, L_units, L_PI_acc), columns=['Mols', 'Units', 'PI'])
-    # print(df)
+    
     # Posting df to DB
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS accountance_2")
