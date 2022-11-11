@@ -11,10 +11,7 @@ from win32com.client.gencache import EnsureDispatch
 import win32com
 print(win32com.__gen_path__)
 
-# Get the Excel Application COM object
-xl = EnsureDispatch('Excel.Application')
-wb = xl.Workbooks.Open(f"{os.getcwd()}\\geozonesreport.xlsx")
-ws = wb.Worksheets(1)
+
 
 # Making connections to db
 db = sqlite3.connect('omnicomm.db')
@@ -26,10 +23,7 @@ def main():
     df1 = pd.read_sql_query("SELECT * FROM parse_plates", cnx)
     
     L_units = cursor.execute(f"SELECT Units FROM parse_plates").fetchall()
-    # L_locs = cursor.execute(f"SELECT Locations FROM parse_locs").fetchall()
-
-    # D = dict(zip(L_units, L_locs))
-    
+   
     L_locs_temp = []
     for i in L_units:
         if cursor.execute(f"SELECT Units FROM parse_locs WHERE Units like '%{i}%'").fetchall():

@@ -41,7 +41,12 @@ def main():
     plates6 = re.compile("\дэс.*")
     plates7 = re.compile("\D{2}\s\d+\s\d+")
     
+    # Crutches
     plates8 = re.compile("GH120530SM")
+    plates9 = re.compile("ПГУ-ОЗРД  113")
+    # Jereh Маз насос инв №
+    plates10 = re.compile("091217")
+    
     
     # Derivating plates from vehicles
     L_plates = [''.join(re.findall(plates1, x)) or 
@@ -51,9 +56,12 @@ def main():
                      ''.join(re.findall(plates5, x)) or
                      ''.join(re.findall(plates6, x)) or
                      ''.join(re.findall(plates7, x)) or 
-                     ''.join(re.findall(plates8, x)) for x in L_units]
+                     ''.join(re.findall(plates8, x)) or
+                     ''.join(re.findall(plates9, x)) or
+                     ''.join(re.findall(plates10, x))
+                    for x in L_units]
 
-
+    
     # Turn plates into 123abc type
     def transform_plates(plates):
         L_regions = [186, 86, 797, 116, '02', '07',89, 82, 78, 54, 77, 126, 188, 88, 174, 74, 158, 196, 156, 56, 76, 23]
@@ -80,7 +88,7 @@ def main():
     # Merge dfs by columns 
     df = df1.join(df2, how = 'left')
 
-    pprint(df)
+    print(df)
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS parse_plates")
     df.to_sql(name='parse_plates', con=db, if_exists='replace', index=False)

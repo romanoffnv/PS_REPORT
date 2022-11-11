@@ -119,43 +119,8 @@ def main():
 
     # Remove pointless sentences
     L_units = [x if len(x) < 20 else '' for x in L_units]
-    
-    # Crutch replacements for plates
-    D_crutches = {
-        # Reversed region
-        '86УК7189': 'УК7189 86',
-        '86УК7190': 'УК7190 86',
-        '86УК7191': 'УК7191 86',
-        '86УК4804': 'УК4804 86',
-        '86УК8330': 'УК8330 86',
-        '86УК7402': 'УК7402 86',
-        '86УК4806': 'УК4806 86',
-        '86УК7405': 'УК7405 86',
-        '86УК8331': 'УК8331 86',
-        '86УУ0775': 'УУ0775 86',
-        '86УК4807': 'УК4807 86',
-        '86УК7609': 'УК7609 86',
-        '86УК7802': 'УК7802 86',
-        '86УК7857': 'УК7857 86',
-        '86УК7858': 'УК7858 86',
-        '86УК4803': 'УК4803 86',
-        '86УК7403': 'УК7403 86',
-        '77НН7283': 'НН7283 77',
-        '77НН7295': 'НН7295 77',
-        '77НН7282': 'НН7282 77',
-        '77НН7680': 'НН7680 77',
-        '86УК4802': 'УК4802 86',
-        '86УК4805': 'УК4805 86',
-        '86УК7404': 'УК7404 86',
-        '86УК7610': 'УК7610 86',
-        '86УК7801': 'УК7801 86',
-        '30АХ5970': 'АХ5970 30',
- 
-        
-        }        
-        
-    # Replacing leading region in plates
-    
+       
+    # Converting leading region into the trailing region in plates (i.e. '86УК7801': 'УК780186',)
     L_units_temp = []
     L_units = [''.join(re.sub('\s', '', x)).strip() for x in L_units]
     for i in L_units:
@@ -168,6 +133,7 @@ def main():
             L_units_temp.append(i)
 
     L_units = [x for x in L_units_temp]
+    
     # Turn plates into 123abc type
     def transform_plates(plates):
         L_regions_long = [126, 156, 158, 174, 186, 188, 196, 797]
