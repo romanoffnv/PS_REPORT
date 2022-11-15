@@ -69,7 +69,7 @@ def main():
     
     df2 = pd.DataFrame(L_PI_gen, columns=['PI_gen'])
     df = df.join(df2, how = 'left')
-    
+    pprint(df)
     # Posting df to DB
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS gen_PI")

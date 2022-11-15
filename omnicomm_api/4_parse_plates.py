@@ -31,58 +31,63 @@ def main():
     
     df1 = pd.read_sql_query("SELECT * FROM parse_status", cnx)
     
+   
+
     # Fishing out plates by regex from long sentences
-    # Slicing vehicles column(list) into plate, index, literal cols
-    plates1 = re.compile("[А-Яа-я]*\d+[А-Яа-я]{2}\s*\d+")
-    plates2 = re.compile("[А-Яа-я]{2}\d+\s\d+")
-    plates3 = re.compile("\w{2}\s\D\d+\s\d{2}")
-    plates4 = re.compile("\W\d+\s\d+\.\d+")
-    plates5 = re.compile("\ДЭС.*")
-    plates6 = re.compile("\дэс.*")
-    plates7 = re.compile("\D{2}\s\d+\s\d+")
+    L_plates_temp = []
+    def plate_fisher(regex, L_units):
+        for i in L_units:
+            if 'ДЭС' in i:
+                L_plates_temp.append(i)
+            else:
+                if re.findall(regex, str(i)):
+                    L_plates_temp.append(''.join(re.findall(regex, str(i))))
+                else:
+                    L_plates_temp.append(i)
+                # print(i)
     
-    # Crutches
-    plates8 = re.compile("GH120530SM")
-    plates9 = re.compile("ПГУ-ОЗРД  113")
-    # Jereh Маз насос инв №
-    plates10 = re.compile("091217")
-    plates11 = re.compile("НМГНКТ-1М")
-    
-    
-    # Derivating plates from vehicles
-    L_plates = [''.join(re.findall(plates1, x)) or 
-                     ''.join(re.findall(plates2, x)) or 
-                     ''.join(re.findall(plates3, x)) or 
-                     ''.join(re.findall(plates4, x)) or
-                     ''.join(re.findall(plates5, x)) or
-                     ''.join(re.findall(plates6, x)) or
-                     ''.join(re.findall(plates7, x)) or 
-                     ''.join(re.findall(plates8, x)) or
-                     ''.join(re.findall(plates9, x)) or
-                     ''.join(re.findall(plates10, x)) or
-                     ''.join(re.findall(plates11, x)) 
-                    for x in L_units]
+        L_units = [str(x).strip() for x in L_plates_temp]
+        L_plates_temp.clear() 
+            
+        return L_units
 
     
+    L_plates = plate_fisher(re.compile('\s\D\d+\D{2}\s\d+'), L_units)
+    L_plates = plate_fisher(re.compile('\(\d{4}\D{2}\d{2}\)'), L_plates) #(7250ах86)
+    L_plates = plate_fisher(re.compile('\D{2}\d{4}\s\d{2}'), L_plates) #s/n № 1000004402
+    L_plates = plate_fisher(re.compile('s/n\s\№\s\d+'), L_plates) #НВД №1 ВВ8684 86
+    L_plates = plate_fisher(re.compile('\s\D{1}\s*\d+\s*\D{2}\s*\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\s\d+\s*\D{2}\s*\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\s\инв.№\s*\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\skz\s\D\d+\s\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\s\D{2}\s*\d{4}\s*\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\d{4}\D{2}\s\d+'), L_plates) #(8804ах 86)
+
+    L_cleaners = ['№', '(', ')', '.']
+    for i in L_cleaners:
+        L_plates = [x.replace(i, '') for x in L_plates]
+
     # Turn plates into 123abc type
     def transform_plates(plates):
-        L_regions = [186, 86, 797, 116, '02', '07',89, 82, 78, 54, 77, 126, 188, 88, 174, 74, 158, 196, 156, 56, 76, 23]
+        L_regions_long = [126, 156, 158, 174, 186, 188, 196, 797]
+        L_regions_short = ['01', '02', '03', '04', '05', '06', '07', '09']
+        for i in L_regions_long:
+            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 9 else x for x in plates]
+        for i in L_regions_short:
+            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 8 or 'kzн' in str(x) else x for x in plates]
+        for i in range(10, 100):
+            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 8 or 'kzн' in str(x) else x for x in plates]
         
-        for i in L_regions:
-            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) > 7 else x for x in plates]
         plates_numeric = [''.join(re.findall(r'\d+', x)).lower() for x in plates if x != None]
         plates_literal = [''.join(re.findall(r'\D', x)).lower() for x in plates if x != None]
         plates = [str(x) + str(y) for x, y in zip(plates_numeric, plates_literal)]
         plates = [''.join(re.sub(r'\s+', '', x)).lower() for x in plates if x != None]
         return plates
     
-
+    
+    L_plates = [re.sub('\s+', '', x) for x in L_plates]
     L_plates_ind = transform_plates(L_plates) 
     
-    # Fixing diesel stations from dict
-    D_om_diesels = json.load(open('D_om_diesels.json'))
-    for k, v in D_om_diesels.items():
-        L_plates_ind = [''.join(x.replace(k, v)).strip() for x in L_plates_ind]
     
     
     df2 = pd.DataFrame(zip(L_plates, L_plates_ind), columns = ['Plates', 'PI'])
@@ -90,7 +95,6 @@ def main():
     # Merge dfs by columns 
     df = df1.join(df2, how = 'left')
 
-    print(df)
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS parse_plates")
     df.to_sql(name='parse_plates', con=db, if_exists='replace', index=False)

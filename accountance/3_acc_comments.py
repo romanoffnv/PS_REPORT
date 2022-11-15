@@ -45,33 +45,38 @@ def main():
     df = pd.merge(df, df_trans, how="outer")
     df = df.dropna(how='any', subset=['Comments'], thresh=1)
 
-    pprint(df.describe())
+    # pprint(df.describe())
     
     # List 'Units', 'Plates', 'Comments'
     L_units = df['Units'].tolist()
     L_plates = df['Plates'].tolist()
     L_comments = df['Comments'].tolist()
     L_plates = [str(x).strip() for x in L_plates]
-    L_plates = [re.sub('\s+', '', x) for x in L_plates]
+    # L_plates = [re.sub('\s+', '', x) for x in L_plates]
     L_comments = [str(x).strip() for x in L_comments]
     
     # Pull items from units if 'Нет данных'
     L_plates_temp = []
     for i, j in zip(L_units, L_plates):
-        if j == 'Нетданных' or j == None:
+        if j == 'Нет данных' or j == None:
             L_plates_temp.append(i)
         else:
             L_plates_temp.append(j)
    
+    L_units = [x for x in L_plates_temp]
+    L_plates_temp.clear()
+
    # Fishing out plates by regex from long sentences
-    def regexBomber(x, L_units):
-        
-        L_plates_temp = []
+    
+    def plate_fisher(regex, L_units):
         for i in L_units:
-            if re.findall(x, str(i)):
-                L_plates_temp.append(''.join(re.findall(x, str(i))))
-            else:
+            if 'ДЭС' in i:
                 L_plates_temp.append(i)
+            else:
+                if re.findall(regex, str(i)):
+                    L_plates_temp.append(''.join(re.findall(regex, str(i))))
+                else:
+                    L_plates_temp.append(i)
                 # print(i)
     
         L_units = [str(x).strip() for x in L_plates_temp]
@@ -80,17 +85,21 @@ def main():
         return L_units
 
     
-    L_plates = regexBomber(re.compile('\s\D\d+\D{2}\s\d+'), L_plates_temp)
-    L_plates = regexBomber(re.compile('\s\D{1}\s*\d+\s*\D{2}\s*\d+'), L_plates)
-    L_plates = regexBomber(re.compile('\s\d+\s*\D{2}\s*\d+'), L_plates)
-    L_plates = regexBomber(re.compile('\s\инв.№\s*\d+'), L_plates)
-    L_plates = regexBomber(re.compile('\skz\s\D\d+\s\d+'), L_plates)
-    L_plates = regexBomber(re.compile('\s\D{2}\s*\d+\s*\d+'), L_plates)
-    # L_plates = regexBomber(re.compile('\s\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\s\D\d+\D{2}\s\d+'), L_units)
+    L_plates = plate_fisher(re.compile('\(\d{4}\D{2}\d{2}\)'), L_plates) #(7250ах86)
+    L_plates = plate_fisher(re.compile('\D{2}\d{4}\s\d{2}'), L_plates) #s/n № 1000004402
+    L_plates = plate_fisher(re.compile('s/n\s\№\s\d+'), L_plates) #НВД №1 ВВ8684 86
+    L_plates = plate_fisher(re.compile('\s\D{1}\s*\d+\s*\D{2}\s*\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\s\d+\s*\D{2}\s*\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\s\инв.№\s*\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\skz\s\D\d+\s\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\s\D{2}\s*\d{4}\s*\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\d{4}\D{2}\s\d+'), L_plates) #(8804ах 86)
     
-    D = dict(zip(L_plates_temp, L_plates))
-    pprint(D)
-    
+    L_cleaners = ['№', '(', ')', '.']
+    for i in L_cleaners:
+        L_plates = [x.replace(i, '') for x in L_plates]
+
     # Turn plates into 123abc type
     def transform_plates(plates):
         L_regions_long = [126, 156, 158, 174, 186, 188, 196, 797]
@@ -108,17 +117,40 @@ def main():
         plates = [''.join(re.sub(r'\s+', '', x)).lower() for x in plates if x != None]
         return plates
     
-    # Repatch problem items after conversion to match with gen_PI
+   
+    L_plates = [re.sub('\s+', '', x) for x in L_plates]
+    L_PI = transform_plates(L_plates) 
+
+    
+    # Cruch fixing the items that don't match with gen_PI
     D_replacers = {
-        '637386ух': '6373ух'
+        '0013': '304000013дэсад--т/инвю/нб-',
+        '113': '113пгу-озрд',
+        '141206023': '445141206023000003798дэсcumminscdsинв',
+        '2219': '000002219',
+        '3346': '5000003346дэсинв',
+        '4236': '5064000004236дэсchvинв',
+        '4312': '442440000004312дэсhgpcchkинв',
+        '4326': '441945000004326дэсhgpccnnинв',
+        '7061': '7061умншситерра',
+        '7062': '7062умншситерра',
+        '7640': '7640ан',
+        'F06007': '39606007дэсинвf',
+        'F06010': '39906010дэсинвf',
+        'H 0762  07': '076207н',
+        'H0783  07': '078307н',
+        'WT10023035': '10023035000 дэс1wtинвэл-',
     }
     
     for k, v in D_replacers.items():
-        L_plates = [x.replace(k, v) for x in L_plates]
+        L_PI = [x.replace(k, v) for x in L_PI]
     
-    L_PI = transform_plates(L_plates) 
-    df = pd.DataFrame(zip(L_units, L_plates, L_PI, L_comments), columns=['Units', 'Plates', 'PI', 'Comments'])
-    # pprint(df)
+    D = dict(zip(L_plates, L_PI))
+    pprint(D)
+    pprint(len(D))
+    # pprint(L_PI)
+    # df = pd.DataFrame(zip(L_units, L_plates, L_PI, L_comments), columns=['Units', 'Plates', 'PI', 'Comments'])
+    # # pprint(df)
 
     
     
