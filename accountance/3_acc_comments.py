@@ -62,48 +62,35 @@ def main():
             L_plates_temp.append(i)
         else:
             L_plates_temp.append(j)
-    # pprint(L_plates_temp)
-    # pprint(len(L_plates_temp))
-    
-    # Fish out plates with regex from newly acquired items
-    # Slicing vehicles column(list) into plate, index, literal cols
-    plates1 = re.compile("[А-Яа-я]*\d+[А-Яа-я]{2}\s*\d+")
-    plates2 = re.compile("[А-Яа-я]{2}\d+\s\d+")
-    plates3 = re.compile("\w{2}\s\D\d+\s\d{2}")
-    plates4 = re.compile("\W\d+\s\d+\.\d+")
-    plates5 = re.compile("\ДЭС.*")
-    plates6 = re.compile("\дэс.*")
-    plates7 = re.compile("\D{2}\s\d+\s\d+")
-    
-    # Crutches
-    plates8 = re.compile("GH120530SM")
-    plates9 = re.compile("ПГУ-ОЗРД  113")
-    # Jereh Маз насос инв №
-    plates10 = re.compile("091217")
-    
-    
-    # Derivating plates from vehicles
-    L_plates = [''.join(re.findall(plates1, x)) or 
-                     ''.join(re.findall(plates2, x)) or 
-                     ''.join(re.findall(plates3, x)) or 
-                     ''.join(re.findall(plates4, x)) or
-                     ''.join(re.findall(plates5, x)) or
-                     ''.join(re.findall(plates6, x)) or
-                     ''.join(re.findall(plates7, x)) or 
-                     ''.join(re.findall(plates8, x)) or
-                     ''.join(re.findall(plates9, x)) or
-                     ''.join(re.findall(plates10, x)) 
-                     if re.findall(plates1, x) else x for x in L_plates_temp]
-
    
-    # Patch items that can't be regexed with dict
-    D_replacers = {
-        'Установка Колтюбинговая МЗКТ 6373 УХ 86': '6373 УХ 86'
-    }
+   # Fishing out plates by regex from long sentences
+    def regexBomber(x, L_units):
+        
+        L_plates_temp = []
+        for i in L_units:
+            if re.findall(x, str(i)):
+                L_plates_temp.append(''.join(re.findall(x, str(i))))
+            else:
+                L_plates_temp.append(i)
+                # print(i)
     
-    for k, v in D_replacers.items():
-        L_plates = [x.replace(k, v) for x in L_plates]
+        L_units = [str(x).strip() for x in L_plates_temp]
+        L_plates_temp.clear() 
+            
+        return L_units
 
+    
+    L_plates = regexBomber(re.compile('\s\D\d+\D{2}\s\d+'), L_plates_temp)
+    L_plates = regexBomber(re.compile('\s\D{1}\s*\d+\s*\D{2}\s*\d+'), L_plates)
+    L_plates = regexBomber(re.compile('\s\d+\s*\D{2}\s*\d+'), L_plates)
+    L_plates = regexBomber(re.compile('\s\инв.№\s*\d+'), L_plates)
+    L_plates = regexBomber(re.compile('\skz\s\D\d+\s\d+'), L_plates)
+    L_plates = regexBomber(re.compile('\s\D{2}\s*\d+\s*\d+'), L_plates)
+    # L_plates = regexBomber(re.compile('\s\d+'), L_plates)
+    
+    D = dict(zip(L_plates_temp, L_plates))
+    pprint(D)
+    
     # Turn plates into 123abc type
     def transform_plates(plates):
         L_regions_long = [126, 156, 158, 174, 186, 188, 196, 797]
@@ -130,8 +117,8 @@ def main():
         L_plates = [x.replace(k, v) for x in L_plates]
     
     L_PI = transform_plates(L_plates) 
-    df = pd.DataFrame(zip(L_units, L_plates, L_PI, L_comments))
-    pprint(df)
+    df = pd.DataFrame(zip(L_units, L_plates, L_PI, L_comments), columns=['Units', 'Plates', 'PI', 'Comments'])
+    # pprint(df)
 
     
     
