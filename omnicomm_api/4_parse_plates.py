@@ -46,6 +46,7 @@ def main():
     plates9 = re.compile("ПГУ-ОЗРД  113")
     # Jereh Маз насос инв №
     plates10 = re.compile("091217")
+    plates11 = re.compile("НМГНКТ-1М")
     
     
     # Derivating plates from vehicles
@@ -58,7 +59,8 @@ def main():
                      ''.join(re.findall(plates7, x)) or 
                      ''.join(re.findall(plates8, x)) or
                      ''.join(re.findall(plates9, x)) or
-                     ''.join(re.findall(plates10, x))
+                     ''.join(re.findall(plates10, x)) or
+                     ''.join(re.findall(plates11, x)) 
                     for x in L_units]
 
     

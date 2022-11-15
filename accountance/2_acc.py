@@ -50,7 +50,7 @@ def main():
     L_units = data.loc[:, 'Item'].tolist()
     L_mols = data.loc[:, 'Responsible'].tolist()
     # Derive the list of untouchable units to post it into db later
-    L_units = [x for x in L_units] 
+    L_units_original = [x for x in L_units] 
       
     # Slice items starting from the keyword's index to the end of the sentence
     def slicer (x, L_units):
@@ -173,7 +173,7 @@ def main():
         L_PI_acc = [x.replace(k, v) for x in L_PI_acc]
 
    
-    df = pd.DataFrame(zip(L_mols, L_units, L_PI_acc), columns=['Mols', 'Units', 'PI'])
+    df = pd.DataFrame(zip(L_mols, L_units_original, L_units, L_PI_acc), columns=['Mols', 'Units', 'Plates', 'PI'])
     
     # Posting df to DB
     print('Posting df to DB')
