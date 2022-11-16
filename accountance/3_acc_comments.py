@@ -17,9 +17,15 @@ print(win32com.__gen_path__)
 
 
 # Making connections to DBs
-db = sqlite3.connect('arby.db')
+db = sqlite3.connect('match.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
+
+cnx_match = sqlite3.connect('match.db')
+
+df_match = pd.read_sql_query("SELECT * FROM gen_PI", cnx_match)
+
+
 
 # Pandas
 pd.set_option('display.max_rows', None)
@@ -140,16 +146,45 @@ def main():
         'H 0762  07': '076207н',
         'H0783  07': '078307н',
         'WT10023035': '10023035000 дэс1wtинвэл-',
+        '10023035wt': '10023035000 дэс1wtинвэл-',
+        '39786кс': '397нкс',
+        '39786кс': '397нкс',
+        '06007f': '39606007дэсинвf',
+        '06010f': '39906010дэсинвf',
+        '155954т': '1559тт',
+        '672986а': '6729ва',
+        '182386н': '1823ан',
+        '181986в': '1819ва',
+        '525786в': '5257вв',
+        '078307h': '078307н',
+        '665дэсcumminscd': 'ДЭС Cummins C66D5',
+        '660386а': '6603ва',
+        '286786а': '2867ва',
+        '81386ос': '813рос',
+        '197486в': '1974вв',
+        '195686в': '1956вв',
+        '240186а': '2401ва',
+        '1дэс': 'дэс1',
+        
     }
     
     for k, v in D_replacers.items():
         L_PI = [x.replace(k, v) for x in L_PI]
     
-    D = dict(zip(L_plates, L_PI))
-    pprint(D)
-    pprint(len(D))
+    # D = dict(zip(L_plates, L_PI))
+    # # pprint(D)
+    # pprint(len(D))
     
     # 1. See whatever of L_PI doesn't match to the match.db PI_gen
+    L_matched, L_unmatched = [], []
+    for i in L_PI:
+        if cursor.execute(f"SELECT PI_gen FROM gen_PI WHERE PI_gen like '%{i}%'").fetchall():
+            L_matched.append(cursor.execute(f"SELECT PI_gen FROM gen_PI WHERE PI_gen like '%{i}%'").fetchall())
+        else:
+            L_unmatched.append(i)
+    pprint(L_unmatched)
+    pprint(len(L_PI))
+    pprint(len(L_unmatched))
     # 2. Leave print dismatch with warning about dismatches and the necessity to add them manually 
     #    into D_replacers dict
     # 3. Update D_replacers dict
