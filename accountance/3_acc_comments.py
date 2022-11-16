@@ -148,16 +148,14 @@ def main():
     D = dict(zip(L_plates, L_PI))
     pprint(D)
     pprint(len(D))
-    # pprint(L_PI)
-    # df = pd.DataFrame(zip(L_units, L_plates, L_PI, L_comments), columns=['Units', 'Plates', 'PI', 'Comments'])
-    # # pprint(df)
-
     
+    # 1. See whatever of L_PI doesn't match to the match.db PI_gen
+    # 2. Leave print dismatch with warning about dismatches and the necessity to add them manually 
+    #    into D_replacers dict
+    # 3. Update D_replacers dict
+    # 4. Segregate functions to the top like in arby.py
     
-    # Form the comments column by matching
-    # Merge comments column to gen db
-    
-    # Collecting crews and locs
+     # Collecting crews and locs
     # L_crws, L_lcs = [], []
     # L_plates_unmatched = []
     # for i in L_plates:
@@ -171,6 +169,20 @@ def main():
     # # Unpacking nested lists
     # L_crws = [', '.join(map(str, x)) for x in L_crws]
     # L_lcs = [', '.join(map(str, x)) for x in L_lcs]
+    
+    
+    
+    
+    # pprint(L_PI)
+    # df = pd.DataFrame(zip(L_units, L_plates, L_PI, L_comments), columns=['Units', 'Plates', 'PI', 'Comments'])
+    # # pprint(df)
+
+    
+    
+    # Form the comments column by matching
+    # Merge comments column to gen db
+    
+   
     
     # df = pd.DataFrame(zip(L_crws, L_units, L_plates, L_lcs), columns=['Crews', 'Units', 'Plates', 'Locations'])
 
