@@ -21,14 +21,21 @@ db = sqlite3.connect('match.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
 
-cnx_match = sqlite3.connect('match.db')
+db_acc = sqlite3.connect('accountance.db')
+db_acc.row_factory = lambda cursor, row: row[0]
+cursor_acc = db_acc.cursor()
 
+cnx_match = sqlite3.connect('match.db')
 df_match = pd.read_sql_query("SELECT * FROM gen_PI", cnx_match)
 
 
 
 # Pandas
 pd.set_option('display.max_rows', None)
+pd.options.display.width = 1200
+pd.options.display.max_colwidth = 30
+pd.options.display.max_columns = 30
+
 
 def main():
     xl = pd.ExcelFile('gen_report.xls')
@@ -51,7 +58,7 @@ def main():
     df = pd.merge(df, df_trans, how="outer")
     df = df.dropna(how='any', subset=['Comments'], thresh=1)
 
-    # pprint(df.describe())
+    
     
     # List 'Units', 'Plates', 'Comments'
     L_units = df['Units'].tolist()
@@ -72,6 +79,7 @@ def main():
     L_units = [x for x in L_plates_temp]
     L_plates_temp.clear()
 
+    
    # Fishing out plates by regex from long sentences
     
     def plate_fisher(regex, L_units):
@@ -106,12 +114,14 @@ def main():
     for i in L_cleaners:
         L_plates = [x.replace(i, '') for x in L_plates]
 
+    
+
     # Turn plates into 123abc type
     def transform_plates(plates):
         L_regions_long = [126, 156, 158, 174, 186, 188, 196, 797]
         L_regions_short = ['01', '02', '03', '04', '05', '06', '07', '09']
         for i in L_regions_long:
-            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 9 else x for x in plates]
+            plates = [x.removesuffix(str(i)).strip() if x != None and (len(x) == 9 or len(x) == 8) else x for x in plates]
         for i in L_regions_short:
             plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 8 or 'kzн' in str(x) else x for x in plates]
         for i in range(10, 100):
@@ -127,6 +137,7 @@ def main():
     L_plates = [re.sub('\s+', '', x) for x in L_plates]
     L_PI = transform_plates(L_plates) 
 
+    
     
     # Cruch fixing the items that don't match with gen_PI
     D_replacers = {
@@ -147,7 +158,6 @@ def main():
         'H0783  07': '078307н',
         'WT10023035': '10023035000 дэс1wtинвэл-',
         '10023035wt': '10023035000 дэс1wtинвэл-',
-        '39786кс': '397нкс',
         '39786кс': '397нкс',
         '06007f': '39606007дэсинвf',
         '06010f': '39906010дэсинвf',
@@ -171,55 +181,29 @@ def main():
     for k, v in D_replacers.items():
         L_PI = [x.replace(k, v) for x in L_PI]
     
-    # D = dict(zip(L_plates, L_PI))
-    # # pprint(D)
-    # pprint(len(D))
-    
+    df = pd.DataFrame(zip(L_units, L_plates, L_PI, L_comments))
+    # pprint(df)
+
     # 1. See whatever of L_PI doesn't match to the match.db PI_gen
     L_matched, L_unmatched = [], []
-    for i in L_PI:
+    L_matched_comm = []
+    for i, j in zip(L_PI, L_comments):
         if cursor.execute(f"SELECT PI_gen FROM gen_PI WHERE PI_gen like '%{i}%'").fetchall():
-            L_matched.append(cursor.execute(f"SELECT PI_gen FROM gen_PI WHERE PI_gen like '%{i}%'").fetchall())
+            L_matched.append(i)
+            L_matched_comm.append(j)
         else:
             L_unmatched.append(i)
-    pprint(L_unmatched)
-    pprint(len(L_PI))
-    pprint(len(L_unmatched))
-    # 2. Leave print dismatch with warning about dismatches and the necessity to add them manually 
-    #    into D_replacers dict
-    # 3. Update D_replacers dict
-    # 4. Segregate functions to the top like in arby.py
-    
-     # Collecting crews and locs
-    # L_crws, L_lcs = [], []
-    # L_plates_unmatched = []
-    # for i in L_plates:
-    #     if cursor.execute(f"SELECT Units FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
-    #         L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
-    #         L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
-    #     else:
-    #         L_plates_unmatched.append(i)
-            
-    
-    # # Unpacking nested lists
-    # L_crws = [', '.join(map(str, x)) for x in L_crws]
-    # L_lcs = [', '.join(map(str, x)) for x in L_lcs]
-    
-    
-    
-    
-    # pprint(L_PI)
-    # df = pd.DataFrame(zip(L_units, L_plates, L_PI, L_comments), columns=['Units', 'Plates', 'PI', 'Comments'])
-    # # pprint(df)
 
-    
-    
-    # Form the comments column by matching
-    # Merge comments column to gen db
-    
-   
-    
-    # df = pd.DataFrame(zip(L_crws, L_units, L_plates, L_lcs), columns=['Crews', 'Units', 'Plates', 'Locations'])
+
+    df = pd.DataFrame(zip(L_matched, L_matched_comm), columns=['PI', 'Comments'])
+    df = df.drop_duplicates(subset='PI', keep="last")
+
+    # Posting df to DB
+    print('Posting df to DB')
+    cursor_acc.execute("DROP TABLE IF EXISTS accountance_3")
+    df.to_sql(name='accountance_3', con=db_acc, if_exists='replace', index=False)
+    db_acc.commit()
+    db_acc.close()
 
 if __name__ == '__main__':
     start_time = time.time()

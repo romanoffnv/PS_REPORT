@@ -29,7 +29,7 @@ cnx_match = sqlite3.connect('match.db')
 
 def main():
     df_arb = pd.read_sql_query("SELECT * FROM ct_drivers", cnx_arb)
-    df_match = pd.read_sql_query("SELECT * FROM acc_to_match", cnx_match)
+    df_match = pd.read_sql_query("SELECT * FROM acc_com_to_match", cnx_match)
 
     # Destructuring df_arb
     def cits_destructurer():
@@ -78,11 +78,13 @@ def main():
             'Units_brm',
             'Plates_brm',
             'Locs_brm',
+            'Loctions_om',
             'PI_gen',
-            'Mols'
+            'Mols',
+            'Acc_comments',
             ]
     df = df[cols]
-    
+    pprint(cols)
     # Posting df to DB
     print('Posting df to DB')
     cursor.execute("DROP TABLE IF EXISTS arby_to_match")
