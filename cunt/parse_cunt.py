@@ -38,9 +38,9 @@ df_acc = pd.read_sql_query("SELECT * FROM accountance_3", cnx_acc)
 
 # Pandas
 pd.set_option('display.max_rows', None)
-pd.options.display.width = 1200
-pd.options.display.max_colwidth = 30
-pd.options.display.max_columns = 30
+# pd.options.display.width = 1200
+# pd.options.display.max_colwidth = 30
+# pd.options.display.max_columns = 30
 
 
 def main():
@@ -81,6 +81,7 @@ def main():
         df = df.loc[df['Drivers'].str.len() != 4]
         return df
 
+    # Getting and merging dfs by fleets
     df_1 = getter(df, 'Флот №1', 'ГРП 1', 'Водители_1')
     df_2 = getter(df, 'Флот №2', 'ГРП 2', 'Водители_2')
     df_m = pd.merge(df_1, df_2, how="outer")
@@ -107,38 +108,7 @@ def main():
     print(df_m)
     print(df_m.describe())
     
-    # Listing crew names and row numbers of the crew blocks
-    # def getter(col):
-    #     row = 2
-    #     L_units = []
-    #     while True:
-    #         L_units.append(ws.Cells(row, col).Value)
-    #         row += 1
-    #         if row == 53:
-    #             break
-    #     return L_units
-    
-    # L_units = getter(2)
-
-    # def cleaner(L):
-    #     L = [str(x).split('___________________') for x in L]
-    #     L = [', '.join(map(str, x)) for x in L]
-    #     L = [re.sub('\n', ' ', x) for x in L]
-    #     L = [str(x).split(',') for x in L]
-            
-    #     L = list(itertools.chain.from_iterable(L))
-    #     L = [str(x).split(')') for x in L]
-    #     L = list(itertools.chain.from_iterable(L))
-    #     L = [str(x).strip() for x in L if x != 'None']
-    #     L = [str(x).split('. ') for x in L]
-    #     L = list(itertools.chain.from_iterable(L))
-
-    #     L = [re.sub('\s+', ' ', x) for x in L]
-    #     L = [''.join(re.sub(r'\[Н]', '', x)).strip() for x in L]
-    #     L = [''.join(re.sub('\(', '', x)).strip() for x in L]
-    #     return L
-    
-    # L_units = cleaner(L_units)
+   
 
     #  # Fishing out plates by regex from long sentences
     # L_plates_temp = []
