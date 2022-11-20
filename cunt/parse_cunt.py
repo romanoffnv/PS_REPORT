@@ -14,12 +14,6 @@ from collections import Counter
 import win32com
 print(win32com.__gen_path__)
 
-# Get the Excel Application COM object
-xl = EnsureDispatch('Excel.Application')
-wb = xl.Workbooks.Open(f"{os.getcwd()}\\cunt.xlsx")
-Sheets = wb.Sheets.Count
-ws = wb.Worksheets(Sheets)
-
 # Making connections to DBs
 db_match = sqlite3.connect('match.db')
 db_match.row_factory = lambda cursor, row: row[0]
@@ -45,8 +39,6 @@ pd.set_option('display.max_rows', None)
 
 def main():
     df = pd.read_excel('cunt.xlsx')
-    
-    wb.Close(True)
     def getter(df, fleet, crew, drvs):
         # Get data from xls
         L0 = df['Целевая техника'].tolist()
@@ -105,8 +97,37 @@ def main():
     df_m = pd.merge(df_m, df_15, how="outer")
     df_16 = getter(df, 'Флот №16', 'ГРП 16', 'Водители_16')
     df_m = pd.merge(df_m, df_16, how="outer")
-    print(df_m)
-    print(df_m.describe())
+    
+    # Derivating plates from units
+    L_units = df_m['Units'].tolist()
+    
+    # Fishing out plates by regex from long sentences
+    def plate_fisher(regex, L_units):
+        L_plates_temp = []
+        for i in L_units:
+            if 'ДЭС' in i:
+                L_plates_temp.append(i)
+            else:
+                if re.findall(regex, str(i)):
+                    L_plates_temp.append(''.join(re.findall(regex, str(i))))
+                else:
+                    L_plates_temp.append(i)
+                # print(i)
+    
+        L_units = [str(x).strip() for x in L_plates_temp]
+        L_plates_temp.clear() 
+            
+        return L_units
+
+    
+    L_plates = plate_fisher(re.compile('\s\D{2}\s\d{4}\s\d+'), L_units)
+    L_plates = plate_fisher(re.compile('\s\D\s\d+\s\D{2}\s\d+'), L_plates)
+    L_plates = plate_fisher(re.compile('\s\D\s\d{4}\s+\d+'), L_plates) #H 0762  07
+    L_plates = plate_fisher(re.compile('\s\d{4}\s\D{2}\s\d+'), L_plates) #7713 НХ 77
+    L_plates = plate_fisher(re.compile('\s\D{2}\-\D+\-\d+'), L_plates) #CT-DV-141, CT-CTU-1000
+    L_plates = plate_fisher(re.compile('\s\D{3}\-\d+'), L_plates) #HFU-2000
+    L_plates = plate_fisher(re.compile('\№\s\d+'), L_plates) #№ 0079
+    pprint(L_plates)
     
    
 
