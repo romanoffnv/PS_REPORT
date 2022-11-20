@@ -15,36 +15,36 @@ from collections import Counter
 
 # Making connections to DBs
 # connection to brm.db
-db_arb = sqlite3.connect('drivers.db')
-db_arb.row_factory = lambda cursor, row: row[0]
-cursor_arb = db_arb.cursor()
+db_drv = sqlite3.connect('drivers.db')
+db_drv.row_factory = lambda cursor, row: row[0]
+cursor_drv = db_drv.cursor()
 
 # connection to match.db
 db_match = sqlite3.connect('match.db')
 db_match.row_factory = lambda cursor, row: row[0]
 cursor = db_match.cursor()
 
-cnx_arb = sqlite3.connect('drivers.db')
+cnx_drv = sqlite3.connect('drivers.db')
 cnx_match = sqlite3.connect('match.db')
 
 def main():
-    df_arb = pd.read_sql_query("SELECT * FROM ct_drivers", cnx_arb)
-    df_match = pd.read_sql_query("SELECT * FROM acc_com_to_match", cnx_match)
+    df_drv = pd.read_sql_query("SELECT * FROM frac_drivers", cnx_drv)
+    df_match = pd.read_sql_query("SELECT * FROM arby_to_match", cnx_match)
 
-    # Destructuring df_arb
-    def cits_destructurer():
-        L0 = df_arb['Drivers'].tolist()
-        L1 = df_arb['PI'].tolist()
+    # Destructuring df_drv
+    def drv_destructurer():
+        L0 = df_drv['Drivers'].tolist()
+        L1 = df_drv['PI'].tolist()
         return L0, L1
     
-    L_all_arb = cits_destructurer()
+    L_all_drv = drv_destructurer()
     
     # Destructuring match df 
     L_PI = df_match['PI_gen'].tolist()
     
     # Get matched plates
     def matcher(L_values):
-        D = dict(zip(L_all_arb[1], L_values))
+        D = dict(zip(L_all_drv[1], L_values))
         L = []
         L_mm = []
         for i in L_PI:
@@ -56,10 +56,10 @@ def main():
             
         return L
             
-    L_drivers = matcher(L_all_arb[0])
-    df_drivers = pd.DataFrame(L_drivers, columns=['Drivers_ct'])
+    L_drivers = matcher(L_all_drv[0])
+    df_drivers = pd.DataFrame(L_drivers, columns=['Drivers_frac'])
     df = df_match.join(df_drivers, how = 'left')
-    
+   
     cols = df.columns.tolist()
     pprint(cols)
     cols = ['Groups_om',
@@ -77,20 +77,22 @@ def main():
             'Crews_brm',
             'Units_brm',
             'Plates_brm',
+            'Drivers_frac',
             'Locs_brm',
-            'Loctions_om',
             'PI_gen',
             'Mols',
             'Acc_comments',
             ]
     df = df[cols]
     pprint(cols)
+    
     # Posting df to DB
     print('Posting df to DB')
-    cursor.execute("DROP TABLE IF EXISTS arby_to_match")
-    df.to_sql(name='arby_to_match', con=db_match, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS cunt_to_match")
+    df.to_sql(name='cunt_to_match', con=db_match, if_exists='replace', index=False)
     db_match.commit()
     db_match.close()
+
 if __name__ == '__main__':
     start_time = time.time()
     main()
