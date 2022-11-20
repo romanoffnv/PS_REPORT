@@ -122,8 +122,10 @@ def main():
     L_plates = plate_fisher(re.compile('\s\D{2}\s\d{4}\s\d+'), L_units)
     L_plates = plate_fisher(re.compile('\s\D\s\d+\s\D{2}\s\d+'), L_plates)
     L_plates = plate_fisher(re.compile('\s\D\s\d{4}\s+\d+'), L_plates) #H 0762  07
+    L_plates = plate_fisher(re.compile('\s\d{4}\s\D{2}\s\d+'), L_plates) #7713 НХ 77
     L_plates = plate_fisher(re.compile('\s\D{2}\-\D+\-\d+'), L_plates) #CT-DV-141, CT-CTU-1000
     L_plates = plate_fisher(re.compile('\s\D{3}\-\d+'), L_plates) #HFU-2000
+    L_plates = plate_fisher(re.compile('\№\s\d+'), L_plates) #№ 0079
     pprint(L_plates)
     
     # Listing crew names and row numbers of the crew blocks
