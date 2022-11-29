@@ -99,7 +99,7 @@ def main():
 
         return L_plates
 
-        # Turn plates into 123abc type
+    # Turn plates into 123abc type
     def transform_plates(plates):
         plates = [re.sub('\s+', '', x) for x in plates]
         L_regions_long = [126, 156, 158, 174, 186, 188, 196, 797]
