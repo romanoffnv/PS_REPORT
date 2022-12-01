@@ -16,7 +16,7 @@ print(win32com.__gen_path__)
 
 
 # Making connections to DBs
-db = sqlite3.connect('omnicomm.db')
+db = sqlite3.connect('data.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
 
@@ -124,8 +124,8 @@ def main():
     
     # Posting df to DB
     print('Posting df to DB')
-    cursor.execute("DROP TABLE IF EXISTS parse_trucks")
-    df.to_sql(name='parse_trucks', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS om_parse_trucks")
+    df.to_sql(name='om_parse_trucks', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
 
