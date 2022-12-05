@@ -17,21 +17,16 @@ from collections import Counter
 
 # Making connections to DBs
 # connection to cits.db
-db = sqlite3.connect('cits.db')
+db = sqlite3.connect('data.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
 
-# connection to omnicomm.db
-db_om = sqlite3.connect('omnicomm.db')
-db_om.row_factory = lambda cursor, row: row[0]
-cursor_om = db_om.cursor()
-
 
 def main():
-    L_crews = cursor.execute("SELECT Crews FROM Units_Locs_Parsed").fetchall()
-    L_units = cursor.execute("SELECT Units FROM Units_Locs_Parsed").fetchall()
-    L_plates = cursor.execute("SELECT Plates FROM Units_Locs_Parsed").fetchall()
-    L_locs = cursor.execute("SELECT Locations FROM Units_Locs_Parsed").fetchall()
+    L_crews = cursor.execute("SELECT Crews FROM cits_parse").fetchall()
+    L_units = cursor.execute("SELECT Units FROM cits_parse").fetchall()
+    L_plates = cursor.execute("SELECT Plates FROM cits_parse").fetchall()
+    L_locs = cursor.execute("SELECT Locations FROM cits_parse").fetchall()
     
     
     # Pre-cleaning 
@@ -109,13 +104,17 @@ def main():
     for k, v in D_diesels.items():
         L_plates_ind = [''.join(x.replace(k, v)).strip() for x in L_plates_ind]
         
+    for i in L_plates_ind:
+        if len(i) != 6:
+            print(i)
+
     df = pd.DataFrame(zip(L_crews, L_units, L_plates, L_plates_ind, L_locs), columns=['Crews', 'Units', 'Plates', 'Plate_index', 'Locations'])
     df = df.drop_duplicates(subset='Plate_index', keep="first")
-    print(df)
+    # print(df)
     # Posting df to DB
     print('Posting df to DB')
-    cursor.execute("DROP TABLE IF EXISTS Final_cits")
-    df.to_sql(name='Final_cits', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS cits_final")
+    df.to_sql(name='cits_final', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
     

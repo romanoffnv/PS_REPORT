@@ -16,14 +16,14 @@ from collections import Counter
 
 # Making connections to DBs
 
-db = sqlite3.connect('cits.db')
+db = sqlite3.connect('data.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
 
 
 def main():
-     # Pulling Units_Locs_Raw.db into lists
-    L_units = cursor.execute("SELECT Units FROM Units_Locs_Raw").fetchall()
+    # Pulling cits_get.db into lists
+    L_units = cursor.execute("SELECT Units FROM cits_get").fetchall()
     
     # Cleaning L_units
     L_cleanwords = ['Цель работ:', 'профессия', 'Бурильщик', 'Пом.бур', 'Маш-т', '\n', 'гос№', 'гос',
@@ -151,12 +151,7 @@ def main():
     L_plates_conditioned = L_plates1 + L_plates2 + L_plates3 + L_plates4 + L_plates5 + L_plates6 + L_plates7 + L_plates8
     # Merging lists of all conditioned units been ripped off for plates
     L_units_conditioned = L_units1 + L_units2 + L_units3 + L_units4 + L_units5 + L_units6 + L_units7 + L_units8
-    
-    # pprint(len(L_plates_conditioned))
-    # pprint(len(L_units_conditioned))
-    # df = pd.DataFrame(zip(L_units_conditioned, L_plates_conditioned))
-    # print(df)
-
+   
     # Function that pops plates with certain params from units list to avoid regex interference
     def plate_popper(num, L_plates_conditioned, L_units):
         while True:
@@ -206,7 +201,8 @@ def main():
     
     # Posting df to DB 'Units_Plates' to be able to collect units later
     cursor.execute("DROP TABLE IF EXISTS Units_Plates")
-    df.to_sql(name='Units_Plates', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS cits_Units_Plates")
+    df.to_sql(name='cits_Units_Plates', con=db, if_exists='replace', index=False)
     db.commit()
     
     # Listing plates from verified df (matched with units, no dubs)
@@ -220,9 +216,9 @@ def main():
     L_crws, L_lcs = [], []
     L_plates_unmatched = []
     for i in L_plates:
-        if cursor.execute(f"SELECT Units FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall():
-            L_crws.append(cursor.execute(f"SELECT Crews FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
-            L_lcs.append(cursor.execute(f"SELECT Fields FROM Units_Locs_Raw WHERE Units like '%{i}%'").fetchall())
+        if cursor.execute(f"SELECT Units FROM cits_get WHERE Units like '%{i}%'").fetchall():
+            L_crws.append(cursor.execute(f"SELECT Crews FROM cits_get WHERE Units like '%{i}%'").fetchall())
+            L_lcs.append(cursor.execute(f"SELECT Fields FROM cits_get WHERE Units like '%{i}%'").fetchall())
         else:
             L_plates_unmatched.append(i)
             
@@ -233,11 +229,12 @@ def main():
     
     df = pd.DataFrame(zip(L_crws, L_units, L_plates, L_lcs), columns=['Crews', 'Units', 'Plates', 'Locations'])
     
+    print(df)
     
     # Posting df to DB
     print('Posting df to DB')
-    cursor.execute("DROP TABLE IF EXISTS Units_Locs_Parsed")
-    df.to_sql(name='Units_Locs_Parsed', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS cits_parse")
+    df.to_sql(name='cits_parse', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
     

@@ -22,7 +22,7 @@ ws = wb.Worksheets(Sheets)
 
 # Making connections to DBs
 
-db = sqlite3.connect('cits.db')
+db = sqlite3.connect('data.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
 
@@ -90,13 +90,16 @@ def main():
     # Building df
     df = pd.DataFrame(zip(L_crews, L_units, L_fields), columns=['Crews', 'Units', 'Fields'])
     
-    
+    pprint(df)
     # Posting df to DB
     print('Posting df to DB')
-    cursor.execute("DROP TABLE IF EXISTS Units_Locs_Raw")
-    df.to_sql(name='Units_Locs_Raw', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS cits_get")
+    df.to_sql(name='cits_get', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
     
     
-c
+if __name__== '__main__':
+    start_time = time.time()
+    main()
+    print("--- %s seconds ---" % (time.time() - start_time))
