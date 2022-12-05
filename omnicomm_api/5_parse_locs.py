@@ -10,44 +10,43 @@ from win32com.client.gencache import EnsureDispatch
 import win32com
 print(win32com.__gen_path__)
 
-# Get the Excel Application COM object
-xl = EnsureDispatch('Excel.Application')
-wb = xl.Workbooks.Open(f"{os.getcwd()}\\geozonesreport.xlsx")
-ws = wb.Worksheets(1)
-
 # Making connections to db
-db = sqlite3.connect('omnicomm.db')
+db = sqlite3.connect('data.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
-cnx = sqlite3.connect('omnicomm.db')
+cnx = sqlite3.connect('data.db')
 
 def main():
-    # Getting lists from xls file
+    df = pd.read_excel('geozonesreport.xlsx')
+    df = df[9:]
+    df = df.drop_duplicates(subset='Unnamed: 0', keep="first")
+    L_units = df['Unnamed: 0'].tolist()
+    L_locs = df['Unnamed: 1'].tolist()
+    df = pd.DataFrame(zip(L_units, L_locs), columns=['Units', 'Locs'])
+    df1 = pd.read_sql_query("SELECT * FROM om_parse_plates", cnx)
 
-    L_units, L_locs = [], []
-    row = 10
-    while ws.Cells(row, 1).Value != None:
-        L_locs.append(ws.Cells(row, 1).Value)
-        L_units.append(ws.Cells(row, 2).Value)
-        row += 1
+    cursor.execute("DROP TABLE IF EXISTS om_parse_locs")
+    df.to_sql(name='om_parse_locs', con=db, if_exists='replace', index=False)
+    db.commit()
     
-    wb.Close(True)
-    xl.Quit()
+    L_units = cursor.execute(f"SELECT Units FROM om_parse_plates").fetchall()
+   
+    L_locs_temp = []
+    for i in L_units:
+        if cursor.execute(f"SELECT Units FROM om_parse_locs WHERE Units like '%{i}%'").fetchall():
+            L_locs_temp.append(cursor.execute(f"SELECT Locs FROM om_parse_locs WHERE Units like '%{i}%'").fetchall())
+        else:
+            L_locs_temp.append('-')
 
-    # removing duplicated spaces (xls file has some items with duplicated spaces)
-    L_units = [re.sub('\s+', ' ', x) for x in L_units]
-    L_locs = [x if 'Итого' not in x else None for x in L_locs]
+    # Unpacking nested lists
+    L_locs = [', '.join(map(str, x)) if isinstance(x, list) else x for x in L_locs_temp]
     
-    # converting list into df frame
-    df = pd.DataFrame(zip(L_units, L_locs), columns = ['Units', 'Locations'])
-    df = df.dropna(how='any', subset=['Locations'], thresh=1)
-    df = df.drop_duplicates(subset='Units', keep="last")
-
+    df2 = pd.DataFrame(L_locs, columns=['Locs'])
+    df = df1.join(df2, how = 'left')
     pprint(df)
 
-    print('Posting df to DB')
-    cursor.execute("DROP TABLE IF EXISTS parse_locs")
-    df.to_sql(name='parse_locs', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS om_final")
+    df.to_sql(name='om_final', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
     

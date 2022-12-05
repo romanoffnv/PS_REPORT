@@ -69,7 +69,7 @@ def main():
             '\s\D\d+\s\d+\.\d+', #С008 02.2014
             
 
-            # '\s\d{5}', #Блендер контейнерный 05566
+            '\s\d{5}', #Блендер контейнерный 05566
         ]
 
     L_plates = plate_fisher(re.compile(L_regex[0]), L_units)
