@@ -60,6 +60,30 @@ def main():
     L_units = [str(x).strip() for x in L_units if x != '']
     L_units = [x for x in L_units if x != '']
     
+    
+   
+  
+    # This function splits merged strings by params
+    def splitter(L, a, b, c):
+        
+        L = [re.sub(a, b, x) if c in str(x) else x for x in L]    
+        L = [x.split(',') for x in L]
+        L = list(itertools.chain.from_iterable(L))
+        return L
+    
+    # Splitting merged strings by sending to splitter function with params
+    L_units = splitter(L_units, '\(', '\,(', 'ПС')    
+    L_units = splitter(L_units, '\)', '\),', 'ПС')    
+    L_units = splitter(L_units, '/', ',', 'ДЭС')    
+    
+    # Removing items that don't have numbers (i.e. not plates, e.g. 'автоцистерна'), or are the blank ones after the del removal
+    pattern_D = re.compile(r'\d')
+    L_units = [''.join(x).strip() for x in L_units if re.findall(pattern_D, str(x))]
+    # Removing items with del marker
+    L_units = ['' if 'del' in str(x) else x for x in L_units]
+    L_units = [x for x in L_units if x != '']
+    L_units = [re.sub(r'\\', '', x) for x in L_units]
+
     # Replacing cits abbreviations with items names of Omnicomm
     D_ct_replacers = {
                 'С/Т': 'Камаз ',
@@ -79,35 +103,9 @@ def main():
             }    
     for k, v in D_ct_replacers.items():
         L_units = [''.join(re.sub(k, v, x)).strip() for x in L_units ]
-  
-    # This function splits merged strings by params
-    def splitter(L, a, b, c):
-        
-        L = [re.sub(a, b, x) if c in str(x) else x for x in L]    
-        L = [x.split(',') for x in L]
-        L = list(itertools.chain.from_iterable(L))
-        return L
-    
-    # Splitting merged strings by sending to splitter function with params
-    L_units = splitter(L_units, '\(', '\,(', 'ПС')    
-    L_units = splitter(L_units, '\)', '\),', 'ПС')    
-    L_units = splitter(L_units, '/', ',', 'ДЭС')    
-    
-
-    # Removing items that don't have numbers (i.e. not plates, e.g. 'автоцистерна'), or are the blank ones after the del removal
-    pattern_D = re.compile(r'\d')
-    L_units = [''.join(x).strip() for x in L_units if re.findall(pattern_D, str(x))]
-    # Removing items with del marker
-    L_units = ['' if 'del' in str(x) else x for x in L_units]
-    L_units = [x for x in L_units if x != '']
-    L_units = [re.sub(r'\\', '', x) for x in L_units]
-    L_units = [re.sub(r'\s+', ' ', x) for x in L_units]
-    
-
     
     # Fishing out plates by regex from long sentences
     def plate_ripper(L_units):
-        L_units = [re.sub(r'/', '', x) for x in L_units]
         def plate_fisher(regex, L_units):
             L_plates_temp = []
             for i in L_units:
@@ -141,6 +139,7 @@ def main():
         return L_plates
 
     L_plates = plate_ripper(L_units)
+    
     L_plates_temp = []
     for i in L_plates:
         if 'олуприцеп' in i:
@@ -150,13 +149,33 @@ def main():
         else:
             L_plates_temp.append(i)
 
-    pprint(L_plates_temp)
+    
     L_plates = [x for x in L_plates_temp]
     
+    # Getting crews and locs 
+    L_crws, L_lcs = [], []
+    L_plates_unmatched = []
+    for i in L_plates:
+        if cursor.execute(f"SELECT Units FROM cits_get WHERE Units like '%{i}%'").fetchall():
+            L_crws.append(cursor.execute(f"SELECT Crews FROM cits_get WHERE Units like '%{i}%'").fetchall())
+            L_lcs.append(cursor.execute(f"SELECT Fields FROM cits_get WHERE Units like '%{i}%'").fetchall())
+        else:
+            L_plates_unmatched.append(i)
+            
+    
+    # Unpacking nested lists
+    L_crws = [', '.join(map(str, x)) for x in L_crws]
+    L_lcs = [', '.join(map(str, x)) for x in L_lcs]
+    
+    # pprint(L_plates_unmatched)
+    # pprint(len(L_plates_unmatched))
+
+    # Cleaning trash off the plates
     L_cleans = ['(', 'ПС', ')', '-']
     for i in L_cleans:
         L_plates = [x.replace(i, '') for x in L_plates]
 
+    
     # Fixing plates
     # Converting unconditioned plates into conditioned ones thru the manually supported dict
     D_ct_plates = json.load(open('D_ct_plates.json'))    
@@ -165,12 +184,44 @@ def main():
             if k == j:
                 ind = L_plates.index(j)
                 L_plates[ind] = v
-                
-    df = pd.DataFrame(zip(L_units, L_plates))
-    pprint(df)
+
+    # Derivating PI
+    def transform_plates(plates):
+        plates = [re.sub('\s+', '', x) for x in plates]
+        L_regions_long = [116, 126, 156, 158, 174, 186, 188, 196, 797]
+        L_regions_short = ['01', '02', '03', '04', '05', '06', '07', '09']
+        for i in L_regions_long:
+            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 9 else x for x in plates]
+        for i in L_regions_short:
+            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 8 or 'kzн' in str(x) else x for x in plates]
+        for i in range(10, 100):
+            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 8 or 'kzн' in str(x) else x for x in plates]
+        
+        plates_numeric = [''.join(re.findall(r'\d+', x)).lower() for x in plates if x != None]
+        plates_literal = [''.join(re.findall(r'\D', x)).lower() for x in plates if x != None]
+        plates = [str(x) + str(y) for x, y in zip(plates_numeric, plates_literal)]
+        plates = [''.join(re.sub(r'\s+', '', x)).lower() for x in plates if x != None]
+        return plates
+
+    L_cits_PI = transform_plates(L_plates)
+    # Making filter mask by counting number of digits in plates (to filter out stuff like УН 38мм)
+    L_mask = []
+    for i in L_cits_PI:
+        L_mask.append(sum(c.isdigit() for c in i))
+    # Building df
+    df = pd.DataFrame(zip(L_crws, L_units, L_plates, L_cits_PI, L_lcs, L_mask), columns=['Crews', 'Units', 'Plates', 'PI', 'Locs', 'Mask'])
+    df = df[df['Mask'] > 2]
+    df = df.drop(['Mask'], axis=1)
     
-    # pprint(L_plates)
-    # pprint(len(L_plates))
+    pprint(df)
+    # Posting df to DB
+    print('Posting df to DB')
+    cursor.execute("DROP TABLE IF EXISTS cits_final")
+    df.to_sql(name='cits_final', con=db, if_exists='replace', index=False)
+    db.commit()
+    db.close()
+    
+    
 if __name__== '__main__':
     start_time = time.time()
     main()
