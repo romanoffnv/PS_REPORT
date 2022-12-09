@@ -21,7 +21,7 @@ Sheets = wb.Sheets.Count
 ws = wb.Worksheets(Sheets)
 
 # Making connections to DBs
-db = sqlite3.connect('brm.db')
+db = sqlite3.connect('data.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
 
@@ -106,8 +106,8 @@ def main():
     
     # Posting df to DB
     print('Posting df to DB')
-    cursor.execute("DROP TABLE IF EXISTS Units_Locs_Raw")
-    df.to_sql(name='Units_Locs_Raw', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS brm_get")
+    df.to_sql(name='brm_get', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
 

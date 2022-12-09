@@ -1,4 +1,5 @@
 from asyncio.windows_events import NULL
+import time
 import json
 from numpy import NaN
 import xlsxwriter
@@ -16,7 +17,7 @@ import win32com
 print(win32com.__gen_path__)
 
 # Making connections to DBs
-db = sqlite3.connect('brm.db')
+db = sqlite3.connect('data.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
 
@@ -24,12 +25,12 @@ cursor = db.cursor()
 pd.set_option('display.max_rows', None)
 
 def main():
-    # Pulling Units_Locs_Raw.db into lists
-    L_crews = cursor.execute("SELECT Crews FROM Units_Locs_Raw").fetchall()
-    L_units = cursor.execute("SELECT Units FROM Units_Locs_Raw").fetchall()
-    L_plates = cursor.execute("SELECT Plates_1 FROM Units_Locs_Raw").fetchall()
-    L_plates2 = cursor.execute("SELECT Plates_2 FROM Units_Locs_Raw").fetchall()
-    L_locs = cursor.execute("SELECT Locs FROM Units_Locs_Raw").fetchall()
+    # Pulling brm_get.db into lists
+    L_crews = cursor.execute("SELECT Crews FROM brm_get").fetchall()
+    L_units = cursor.execute("SELECT Units FROM brm_get").fetchall()
+    L_plates = cursor.execute("SELECT Plates_1 FROM brm_get").fetchall()
+    L_plates2 = cursor.execute("SELECT Plates_2 FROM brm_get").fetchall()
+    L_locs = cursor.execute("SELECT Locs FROM brm_get").fetchall()
     
     
     
@@ -43,8 +44,12 @@ def main():
         '865.0':' в865мт186',
         '730.0':' в730ка186',
         '717.0':' в717ка186',
+        '717':' в717ка186',
         '368.0':' в368мр186',
-        '743.0':' в368мр186',
+        '743.0':' в743мт186',
+        '739.0':' в739ка186',
+        '494.0':' Е494ОВ 186',
+        
     }
 
     for k, v in D_plates_fix.items():
@@ -78,10 +83,12 @@ def main():
     df = df.dropna( how='any', subset=['Plates_1', 'Plates_2', 'Locs'], thresh=1)
     
     # Posting df to DB
-    cursor.execute("DROP TABLE IF EXISTS Units_Locs_Fixed")
-    df.to_sql(name='Units_Locs_Fixed', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS brm_fixed")
+    df.to_sql(name='brm_fixed', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
     
 if __name__ == '__main__':
+    start_time = time.time()
     main()
+    print("--- %s seconds ---" % (time.time() - start_time))
