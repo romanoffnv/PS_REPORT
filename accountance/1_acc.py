@@ -13,14 +13,14 @@ print(win32com.__gen_path__)
 
 # Excel connection  
 xl = EnsureDispatch('Excel.Application')
-wb = xl.Workbooks.Open(f"{os.getcwd()}\\acc.xls")
+wb = xl.Workbooks.Open(f"{os.getcwd()}\\acc.xlsx")
 ws1 = wb.Worksheets(1)
 
 # Pandas
 pd.set_option('display.max_rows', None)
 
 # db connections
-db = sqlite3.connect('accountance.db')
+db = sqlite3.connect('data.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
 
@@ -38,10 +38,6 @@ def main():
                 break
             row += 1
         
-        # Extracting plates from paranthesis
-        L_items = [x.split('(') for x in L_items if x != None]
-        L_items = list(itertools.chain.from_iterable(L_items))
-        
         L_items = L_items[1:]
         L_items.append('****')
         
@@ -56,11 +52,7 @@ def main():
             counter += 1    
                 
         
-        # sumL_counts = reduce(lambda x, y: x + y, L_counts)
-        
-      
-      
-        
+               
         wb.Close(True)
         xl.Quit()
         # Correlating the number of mols to match the number of items
