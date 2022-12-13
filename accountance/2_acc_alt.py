@@ -26,54 +26,123 @@ def main():
     L_mols = cursor.execute("SELECT Mol FROM accountance_1").fetchall()
     L_units = cursor.execute("SELECT Unit FROM accountance_1").fetchall()
 
-    L_units = [str(x) for x in L_units]
-    L_units = [x.split('(') if x != None else 'None' for x in L_units]
-    L_units = list(itertools.chain.from_iterable(L_units))
+    # Build df and filter out unneeded items
+    
+    
+    # L_keywords = ['pH-метр', 'PH-метр', 'лабораторный', 'Shinko', 'Вискозиметр', 'Мешалка', 'Пресс', 'диагност', 'видео', 'сварочный', 'моечная', 'индукционный',
+    #                'Станок', 'Стенд', 'стенд', 'Съемник', 'замок', 'фильтровентиляционный', 'труболовка', 'ясс', 'ловильн', 'компрессор', 'агнит', 
+    #                'овитель труб', 'Металлошламоуловитель', 'Овершот', 'Труболовка', 'Труборез', 'Удлинитель', 'ловитель', 'ударно-вращатель', 'Фрез',
+    #                'Штанголовка', 'Яс', 'Core', 'SuperМicro', 'Xerox', 'Kyocera', 'МФУ', 'принтер', 'Ноутбук', 'Радиотелефон', 'Сервер', 'вентиляц', 
+    #                'Системный блок', 'Телевизор', 'Вертлюг', 'Анализатор', 'Блок манифольда', 'Катушка', 'орпус', 'Локатор', 'Лубрикатор', 'Мотопомпа', 
+    #                'Репитер', 'Узел установки намотки', 'Нежилое здание', 'Мойка', 'Земельный участок', 'Сварочный аппарат', 'Стационарный пункт охраны', 'Весы',
+    #                'Сварочное устройство', 'комплексный прибор', 'многозондовый влагомер', 'Автономный модуль', 'шумомер', 'цифровой манометр', 'механизм намотки трубы',
+    #                'влагомер', 'Шкаф', 'Ангар', 'Баня водная', 'Waring', 'WARING', 'Warning', 'сепаратор', 'стола ротора', 'стол ротора', 'Волокуша', 'Газоанализатор',
+    #                'Устьевой герметизатор', 'сброса шаров', 'прокатки труб', 'насыпной плотности', 'запасовки геофизического', 'Головка разводная', 'Датчик',
+    #                'Дефектоскоп', 'Дозиметр', 'ИБП', 'Инвентор', 'микроскоп', 'манометр', 'Клапан редукционный', 'Коллектор геофизический', 'Комплект оборудования',
+    #                'фланцевое соединение', 'Просеивающая машина', 'Расходомер', 'Измеритель плотности', 'Пакер', 'пакер', 'Перфоратор', 'Превентор', 'Резак', 
+    #                'Установка для ремонта БДТ', 'Узел намотки', 'Турникет', 'Тренажер', 'Трамбователь', 'Точечный источник', 'Толщинометр', 'ележка', 'Твердомер',
+    #                'Стол письменный', 'Стингер', 'Стеллаж', 'Система', 'Сборная вышка', 'еометр', 'Резьбо-нарезная', 'Радиостанция', 'Пробоотборник', 'Приёмное оборудование',
+    #                'Преобразователь давл', 'Позиционный станок', 'Подвеска', 'Площадка приустьевая', 'Плазменный резак', 'Нежилое помещение', 'Модуль усилия', 'Модуль рахсодомера',
+    #                'Модуль бытовой', 'Инвертор']
+    # for i in L_keywords:
+    #     df = df[df["Units"].str.contains(str(i)) == False]
+    
+    # # Listing filtered df
+    # L_mols = df['Mols'].tolist()
+    # L_units = df['Units'].tolist()
+    
+    # pprint(L_units)
 
-    def slicer(x, L_units):
-        L_units_temp = []
-        for i in L_units:
-            if x in i:
-                ind = i.index(x)
-                L_units_temp.append(i[ind:])
-            else:
-                L_units_temp.append(i)
-        return L_units_temp
+    def splitter(split, L):
+      L = [str(x) for x in L]  
+      L = [x.split(split) for x in L]
+      L = list(itertools.chain.from_iterable(L))
+    #   L = [x.strip() for x in L if sum(map(str.isalpha, x)) > 1]
+      return L
+
+    L_keywords = ['г/н', 
+                '43118', 'г.н.'
+                'г.н.', 'гн', '(', 'г/р', ';', '43118', 'Гос.№', ',', 'зав.', 'мод.', 'зав', '№', ')', 'ст ', 'Г/н', 
+                'АЦН'
+                ]
+    L_plates = splitter(L_keywords[0], L_units)
+    for i in L_keywords:
+        L_plates = splitter(str(i), L_plates)
+    L_plates = [x.strip() for x in L_plates if sum(map(str.isalpha, x)) < 4]
+    df = pd.DataFrame(zip(L_plates), columns=['Plates'])
+    pprint(df)
+    
+    # for i in L_plates:
+    #     pprint(i)
+    #     pprint(sum(map(str.isalpha, i)) == 2)
+    # pprint(len(L_plates))
+
+    # L_units = [str(x) for x in L_units]
+    # L_units = [x.split('(') if x != None else 'None' for x in L_units]
+    # L_units = list(itertools.chain.from_iterable(L_units))
+
+    # def slicer(side, x, L_units):
+    #     L_units_temp = []
+    #     if side == 'left':
+    #         for i in L_units:
+    #             if x in i:
+    #                 ind = i.index(x)
+    #                 L_units_temp.append(i[ind:])
+    #             else:
+    #                 L_units_temp.append(i)
+    #         return L_units_temp
+    #     elif side == 'right':
+    #         for i in L_units:
+    #             if x in i:
+    #                 ind = i.index(x)
+    #                 L_units_temp.append(i[:ind])
+    #             else:
+    #                 L_units_temp.append(i)
+    #         return L_units_temp
         
 
-    L_plates = slicer('г/н', L_units)
-    L_keywords = ['г.н.', 
-                    'гос.№', 
-                    'гос№', 
-                    'гос. №', 
-                    'Truck', 
-                    'г/р',
-                    'гн',
-                    '43118',
-                    'зав.',
-                    'зав №'
-                    ]
-    for i in L_keywords:
-        L_plates = slicer(str(i), L_plates) 
+    # # Slice from left
+    # L_plates = slicer('left', 'г/н', L_units)
+    # L_keywords = ['г.н.', 
+    #                 'гос.№', 
+    #                 'гос№', 
+    #                 'гос. №', 
+    #                 'Truck', 
+    #                 'г/р',
+    #                 'гн',
+    #                 '43118',
+    #                 'зав.',
+    #                 'зав №'
+    #                 ]
+    # for i in L_keywords:
+    #     L_plates = slicer('left', str(i), L_plates) 
     
-    def slicer2(x, L_plates):
-        L_plates_temp = []
-        for i in L_plates:
-            if x in i:
-                ind = i.index(x)
-                L_plates_temp.append(i[:ind])
-            else:
-                L_plates_temp.append(i)
-        return L_plates_temp
     
-    L_keywords = [',', ';']
-
-    for i in L_keywords:
-        L_plates = slicer2(str(i), L_plates) 
-    pprint(L_plates)
+    # # Slice from right
+    # L_keywords = [',', ';']
+    # for i in L_keywords:
+    #     L_plates = slicer('right', str(i), L_plates) 
+    # pprint(L_plates)
     
-    # # Build dataframe
-    # data = pd.DataFrame(zip(L_mols, L_units), columns=['Responsible', 'Item'])
+    # Build dataframe and filtering df
+    # df = pd.DataFrame(zip(L_units, L_plates), columns=['Units', 'Plates'])
+    # L_keywords = ['pH-метр', 'Овершот', 'Мешалка', 'Прибор', 'Станок', 
+    #             'Безопасный замок', 'резьба', 'труболовка', 
+    #             'стенд', 'Гидроясс', 'ловильн', 'видео', 'еханический',
+    #             'механизм намотки трубы', 'Штанголовка', 'Шламоуловитель',
+    #             'металлошламоуловитель', 'Фрез', 'герметизатор', 'ударно-вращательное',
+    #             'Труборез', 'Труболовка', 'Тележка', 'Телевизор', 'Съемник', 'суперяс',
+    #             'Стеллаж', 'правый', 'левый', 'диаметром', 'коммутатор', 'маршрутизатор',
+    #             'внутр.d', 'правостор', 'левостор', 'агнит', 'овитель', 'шламоуловит',
+    #             'гидропаук', 'мм\)', 'компьютер', 'МФУ', 'Ноутбук', 'принтер', 
+    #             'Xerox', 'Сервер', 'Системный блок', 'Вертлюг', 'Катушка переводная',
+    #             'Лубрикатор', 'Катушка переходная', 'Радиотелефон', 'спутниковый',
+    #             'Xian Landrill', 'противовыбросовый', 'Преобразователь',
+    #             'Резьбо-нарезная', 'Сварочный аппарат', 'OD\)', 'Intel', 'Резак скважинный',
+    #             'азоанализатор', 'Пакер', 'Репитер', 'Клапан редукционный', 'Уголки высоко']
+    # for i in L_keywords:
+    #     df = df[df["Units"].str.contains(str(i)) == False]
+    # pprint(df)
     
     # # Populate list of keywords for df filtration
     # L_units_filter = ['г/н', 'гос.№', 'гос№', 'гос. №', 'Truck', 'VIN', 'Насосная установка', 
