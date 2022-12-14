@@ -23,41 +23,14 @@ pd.set_option('display.max_rows', None)
 
 def main():
     # Get accountance_1 db cols as lists L_mols and L_units
-    L_mols = cursor.execute("SELECT Mol FROM accountance_1").fetchall()
+    # L_mols = cursor.execute("SELECT Mol FROM accountance_1").fetchall()
     L_units = cursor.execute("SELECT Unit FROM accountance_1").fetchall()
-
-    # Build df and filter out unneeded items
-    
-    
-    # L_keywords = ['pH-метр', 'PH-метр', 'лабораторный', 'Shinko', 'Вискозиметр', 'Мешалка', 'Пресс', 'диагност', 'видео', 'сварочный', 'моечная', 'индукционный',
-    #                'Станок', 'Стенд', 'стенд', 'Съемник', 'замок', 'фильтровентиляционный', 'труболовка', 'ясс', 'ловильн', 'компрессор', 'агнит', 
-    #                'овитель труб', 'Металлошламоуловитель', 'Овершот', 'Труболовка', 'Труборез', 'Удлинитель', 'ловитель', 'ударно-вращатель', 'Фрез',
-    #                'Штанголовка', 'Яс', 'Core', 'SuperМicro', 'Xerox', 'Kyocera', 'МФУ', 'принтер', 'Ноутбук', 'Радиотелефон', 'Сервер', 'вентиляц', 
-    #                'Системный блок', 'Телевизор', 'Вертлюг', 'Анализатор', 'Блок манифольда', 'Катушка', 'орпус', 'Локатор', 'Лубрикатор', 'Мотопомпа', 
-    #                'Репитер', 'Узел установки намотки', 'Нежилое здание', 'Мойка', 'Земельный участок', 'Сварочный аппарат', 'Стационарный пункт охраны', 'Весы',
-    #                'Сварочное устройство', 'комплексный прибор', 'многозондовый влагомер', 'Автономный модуль', 'шумомер', 'цифровой манометр', 'механизм намотки трубы',
-    #                'влагомер', 'Шкаф', 'Ангар', 'Баня водная', 'Waring', 'WARING', 'Warning', 'сепаратор', 'стола ротора', 'стол ротора', 'Волокуша', 'Газоанализатор',
-    #                'Устьевой герметизатор', 'сброса шаров', 'прокатки труб', 'насыпной плотности', 'запасовки геофизического', 'Головка разводная', 'Датчик',
-    #                'Дефектоскоп', 'Дозиметр', 'ИБП', 'Инвентор', 'микроскоп', 'манометр', 'Клапан редукционный', 'Коллектор геофизический', 'Комплект оборудования',
-    #                'фланцевое соединение', 'Просеивающая машина', 'Расходомер', 'Измеритель плотности', 'Пакер', 'пакер', 'Перфоратор', 'Превентор', 'Резак', 
-    #                'Установка для ремонта БДТ', 'Узел намотки', 'Турникет', 'Тренажер', 'Трамбователь', 'Точечный источник', 'Толщинометр', 'ележка', 'Твердомер',
-    #                'Стол письменный', 'Стингер', 'Стеллаж', 'Система', 'Сборная вышка', 'еометр', 'Резьбо-нарезная', 'Радиостанция', 'Пробоотборник', 'Приёмное оборудование',
-    #                'Преобразователь давл', 'Позиционный станок', 'Подвеска', 'Площадка приустьевая', 'Плазменный резак', 'Нежилое помещение', 'Модуль усилия', 'Модуль рахсодомера',
-    #                'Модуль бытовой', 'Инвертор']
-    # for i in L_keywords:
-    #     df = df[df["Units"].str.contains(str(i)) == False]
-    
-    # # Listing filtered df
-    # L_mols = df['Mols'].tolist()
-    # L_units = df['Units'].tolist()
-    
-    # pprint(L_units)
 
     def splitter(split, L):
       L = [str(x) for x in L]  
       L = [x.split(split) for x in L]
       L = list(itertools.chain.from_iterable(L))
-    #   L = [x.strip() for x in L if sum(map(str.isalpha, x)) > 1]
+
       return L
 
     L_keywords = ['г/н', 
@@ -65,10 +38,51 @@ def main():
                 'г.н.', 'гн', '(', 'г/р', ';', '43118', 'Гос.№', ',', 'зав.', 'мод.', 'зав', '№', ')', 'ст ', 'Г/н', 
                 'АЦН'
                 ]
+    
     L_plates = splitter(L_keywords[0], L_units)
     for i in L_keywords:
         L_plates = splitter(str(i), L_plates)
-    L_plates = [x.strip() for x in L_plates if sum(map(str.isalpha, x)) < 4]
+    
+    # Filter out strings that have more or less letters than in a plate
+    L_plates = [x.strip() for x in L_plates if 'изель' in x or (sum(map(str.isalpha, x)) < 4 and sum(map(str.isalpha, x)) > 1)]
+
+
+    # Fishing out plates by regex from long sentences
+    def plate_ripper(L_units):
+        def plate_fisher(regex, L_units):
+            L_plates_temp = []
+            for i in L_units:
+                if 'изель' in i:
+                    L_plates_temp.append(i)
+                else:
+                    if re.findall(regex, str(i)):
+                        L_plates_temp.append(''.join(re.findall(regex, str(i))))
+                    else:
+                        L_plates_temp.append(i)
+                    # print(i)
+        
+            L_units = [str(x).strip() for x in L_plates_temp]
+            L_plates_temp.clear() 
+                
+            return L_units
+        L_regex = [
+            '\s\D{2}\s*\d{2}\s*\d{2}\s*\d+', #ВВ  4553 86, # АН 78 96 82, ВВ  4553 86
+            '\s\D\s*\d{3}\s*\D{2}\s*\d+', #Е 898 СВ 186, У 039 ВК186
+            '\s\D\s\d{4}\s+\d+', #H 0762  07
+            '\s\d{4}\s\D{2}\s+\d+', #7713 НХ 77
+            '\s\D{2}\-\D+\-\d+', #CT-DV-141, CT-CTU-1000
+            '\s\D{3}\-\d+', #HFU-2000
+            '\№\s\d+', #№ 0079
+            '\s\D\s*\d{3}\s*\D{2}\s*\d+', #runs again to choose bw paranthesis and outside par Е 898 СВ 186
+        ]
+        L_plates = plate_fisher(re.compile(L_regex[0]), L_units) 
+        
+        for regex in L_regex:
+            L_plates = plate_fisher(re.compile(regex), L_plates)
+        return L_plates
+    
+    L_plates = plate_ripper(L_plates)
+
     df = pd.DataFrame(zip(L_plates), columns=['Plates'])
     pprint(df)
     
