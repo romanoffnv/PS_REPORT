@@ -44,47 +44,83 @@ def main():
         L_plates = splitter(str(i), L_plates)
     
     # Filter out strings that have more or less letters than in a plate
-    L_plates = [x.strip() for x in L_plates if 'изель' in x or (sum(map(str.isalpha, x)) < 4 and sum(map(str.isalpha, x)) > 1)]
+    L_plates = [''.join(x).strip() for x in L_plates if 'изель' in x or (sum(map(str.isalpha, x)) < 4 and sum(map(str.isalpha, x)) > 1)]
 
-
-    # Fishing out plates by regex from long sentences
-    def plate_ripper(L_units):
-        def plate_fisher(regex, L_units):
-            L_plates_temp = []
-            for i in L_units:
-                if 'изель' in i:
-                    L_plates_temp.append(i)
-                else:
-                    if re.findall(regex, str(i)):
-                        L_plates_temp.append(''.join(re.findall(regex, str(i))))
-                    else:
-                        L_plates_temp.append(i)
-                    # print(i)
-        
-            L_units = [str(x).strip() for x in L_plates_temp]
-            L_plates_temp.clear() 
-                
-            return L_units
-        L_regex = [
-            '\s\D{2}\s*\d{2}\s*\d{2}\s*\d+', #ВВ  4553 86, # АН 78 96 82, ВВ  4553 86
-            '\s\D\s*\d{3}\s*\D{2}\s*\d+', #Е 898 СВ 186, У 039 ВК186
-            '\s\D\s\d{4}\s+\d+', #H 0762  07
-            '\s\d{4}\s\D{2}\s+\d+', #7713 НХ 77
-            '\s\D{2}\-\D+\-\d+', #CT-DV-141, CT-CTU-1000
-            '\s\D{3}\-\d+', #HFU-2000
-            '\№\s\d+', #№ 0079
-            '\s\D\s*\d{3}\s*\D{2}\s*\d+', #runs again to choose bw paranthesis and outside par Е 898 СВ 186
-        ]
-        L_plates = plate_fisher(re.compile(L_regex[0]), L_units) 
-        
-        for regex in L_regex:
-            L_plates = plate_fisher(re.compile(regex), L_plates)
-        return L_plates
     
-    L_plates = plate_ripper(L_plates)
+    def plate_ripper(regex, L):
+        L_temp = []
+        for i in L:
+            if re.findall(regex, str(i)):
+                L_temp.append(''.join(re.findall(regex, str(i))))
+            else:
+                L_temp.append(i)
+        L = [x.strip() for x in L_temp]
+        return L
+    
+    L_plates = plate_ripper('\D\s*\d{3}\s*\D{2}\s*\d+', L_plates)
+    L_plates = plate_ripper('\d{4}\s*\D{2}\s*\d+', L_plates)
+    L_regex = [
+        '\D\s*\d{3}\s*\D{2}\s*\d+', #К 333 АЕ 186, Е374УЕ 86, У233ВК 186
+        '\d{4}\s*\D{2}\s*\d+', #2832 УК 86
+    ]
+    for regex in L_regex:
+        L_plates = plate_ripper(regex, L_plates)
+    pprint(L_plates)
+    # L_regex = [
+    #         '\s\D{2}\s*\d{2}\s*\d{2}\s*\d+', #ВВ  4553 86, # АН 78 96 82, ВВ  4553 86
+    #         '\s\D\s*\d{3}\s*\D{2}\s*\d+', #Е 898 СВ 186, У 039 ВК186
+    #         '\s\D\s\d{4}\s+\d+', #H 0762  07
+    #         '\s\d{4}\s\D{2}\s+\d+', #7713 НХ 77
+    #         '\s\D{2}\-\D+\-\d+', #CT-DV-141, CT-CTU-1000
+    #         '\s\D{3}\-\d+', #HFU-2000
+    #         '\№\s\d+', #№ 0079
+    #         '\s\D\s*\d{3}\s*\D{2}\s*\d+', #runs again to choose bw paranthesis and outside par Е 898 СВ 186
+    #         'end'
+    #     ]
+    
+    # for regex in L_regex:
+    #     L_plates = plate_ripper(re.compile(regex), L_plates)
 
-    df = pd.DataFrame(zip(L_plates), columns=['Plates'])
-    pprint(df)
+    # df = pd.DataFrame(zip(L_plates), columns=['Plates'])
+    # pprint(df)
+
+    # # Fishing out plates by regex from long sentences
+    # def plate_ripper(L_units):
+    #     def plate_fisher(regex, L_units):
+    #         L_plates_temp = []
+    #         for i in L_units:
+    #             if 'изель' in i:
+    #                 L_plates_temp.append(i)
+    #             else:
+    #                 if re.findall(regex, str(i)):
+    #                     L_plates_temp.append(''.join(re.findall(regex, str(i))))
+    #                 else:
+    #                     L_plates_temp.append(i)
+    #                 # print(i)
+        
+    #         L_units = [str(x).strip() for x in L_plates_temp]
+    #         L_plates_temp.clear() 
+                
+    #         return L_units
+    #     L_regex = [
+    #         '\s\D{2}\s*\d{2}\s*\d{2}\s*\d+', #ВВ  4553 86, # АН 78 96 82, ВВ  4553 86
+    #         '\s\D\s*\d{3}\s*\D{2}\s*\d+', #Е 898 СВ 186, У 039 ВК186
+    #         '\s\D\s\d{4}\s+\d+', #H 0762  07
+    #         '\s\d{4}\s\D{2}\s+\d+', #7713 НХ 77
+    #         '\s\D{2}\-\D+\-\d+', #CT-DV-141, CT-CTU-1000
+    #         '\s\D{3}\-\d+', #HFU-2000
+    #         '\№\s\d+', #№ 0079
+    #         '\s\D\s*\d{3}\s*\D{2}\s*\d+', #runs again to choose bw paranthesis and outside par Е 898 СВ 186
+    #     ]
+    #     L_plates = plate_fisher(re.compile(L_regex[0]), L_units) 
+        
+    #     for regex in L_regex:
+    #         L_plates = plate_fisher(re.compile(regex), L_plates)
+    #     return L_plates
+    
+    # L_plates = plate_ripper(L_plates)
+
+    
     
     # for i in L_plates:
     #     pprint(i)
