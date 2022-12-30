@@ -1,45 +1,56 @@
-def helprinter(txt):
-    txt = txt.split()
-    return txt
-    # if ' ' in txt:
-    #     ind = txt.index(' ')
-    #     return txt[:ind]
-    # else:
-    #     return txt
-    # txt = txt.capitalize()
-    # res = f'{txt} world'
-    # return res
+import time
+import xlsxwriter
+from win32com.client.gencache import EnsureDispatch
+import os
+import re
+from pprint import pprint
+import pandas as pd
+from functools import reduce
+import itertools
+import sqlite3
+import win32com
+print(win32com.__gen_path__)
 
-L = ['hello', 
-     'good bye', 
-     'fuck you', 
-     'sucks', 
-     'kicks ass', 
-     'fucks you']
-L = [helprinter(x) for x in L]
-print(L)
-# check if the first word has 's' in the end
-def listmerger(L1, L2):
-    L_plates = []
-    for x, y in zip(L1, L2):
-        if x != '':
-            L_plates.append(x)
-        if x == '' or len(x) < len(y):
-            L_plates.append(y)    
-    return L_plates
-
-L1 = ['1', '2', '3', '', '', '', '']
-L2 = ['', '', '', 'a', '/N 0015', '', '']
-L3 = ['', '', '', '', 'S/N 0015286', 'c', 'd']
+# Excel connection  
+# xl = EnsureDispatch('Excel.Application')
+# wb = xl.Workbooks.Open(f"{os.getcwd()}\\Книга1.xlsx")
+# ws1 = wb.Worksheets(1)
 
 
-LL = listmerger(L1, L2)
-LL = listmerger(LL, L3)
-print(LL)
+def main():
+    df = pd.read_excel('Книга1.xlsx')
+    df = df.dropna(how='any', subset=['Флот', 'СПТ'], thresh=1)
+    df = df.drop_duplicates(subset='СПТ', keep="last")
 
-# for x, y in zip(L1, L2):
-#         if x != '':
-#             L_plates.append(x)
-#         elif x == '':
-#             L_plates.append(y)    
-#         return L_plates
+
+    pprint(df)
+
+    import xlsxwriter
+    writer = pd.ExcelWriter('Книга2.xlsx', engine='xlsxwriter')
+    # Write each dataframe to a different worksheet.
+    df.index += 1
+    df.to_excel(writer, index = True, header=True)
+    writer.save()
+
+    # string = ws1.Cells(1, 1).Value
+    # string = string.split(', ')
+    # for i in string:
+    #     print(re.sub('\(.*\)', '', i))
+
+    # row = 1
+    # L = []
+    # while True:
+    #     if ws1.Cells(row, 1).Value != None:
+    #         L.append(ws1.Cells(row, 1).Value)
+    #     row += 1
+    #     if row == 82:
+    #         break
+    # pprint(len(L))
+
+    # L = set(L)
+    # pprint(len(L))
+    
+if __name__ == '__main__':
+    start_time = time.time()
+    main()
+    print("--- %s seconds ---" % (time.time() - start_time))

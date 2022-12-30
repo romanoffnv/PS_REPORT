@@ -45,7 +45,7 @@ def main():
         L_plates = splitter(str(i), L_plates)
     
     # Filter out strings that:
-    # have more or less letters than in a real plate
+    # have more or less letters than in a real plate except for diesel stations
     L_plates = [''.join(x).strip() for x in L_plates if 'изель' in x or (sum(map(str.isalpha, x)) < 4 and sum(map(str.isalpha, x)) > 1)]
     # are shorter than 6 characters
     L_plates = [x for x in L_plates if len(x) > 6]
@@ -76,7 +76,6 @@ def main():
     L_plates6 = plate_ripper('\d+\s*\d+\s*\D{2}\s*\d+', L_plates) #0288  УВ 86, 06 41 УВ 86
     L_plates7 = plate_ripper('\D{2}\s*\d{2}\s*\d{4}', L_plates) #УВ 86 0594
     L_plates8 = plate_ripper('\D{2}\s\d{4}', L_plates) #АХ 9399
-    # Regex conflict!!!, prior regex cuts S/N 0015286 into /N 0015
     L_plates9 = plate_ripper('\D{2}\s\d{4}', L_plates) #S/N 0015286
     
     # Merge obtained regex lists into the one
