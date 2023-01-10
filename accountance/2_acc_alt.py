@@ -20,11 +20,14 @@ pd.set_option('display.max_rows', None)
 db = sqlite3.connect('data.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
+cnx = sqlite3.connect('data.db')
+
 pd.set_option('display.max_rows', None)
 
 def main():
     # Get Unit col from accountance_1.db as list
-    L_units = cursor.execute("SELECT Unit FROM accountance_1").fetchall()
+    L_units = cursor.execute("SELECT Units FROM accountance_1").fetchall()
+    
 
     # Split strings in Unit list by the keywords and get as L_plates list
     def splitter(split, L):
@@ -35,12 +38,16 @@ def main():
       return L
 
     L_keywords = ['г/н', 
-                '43118', 'г.н.'
-                'г.н.', 'гн', '(', 'г/р', ';', '43118', 'Гос.№', ',', 'зав.', 'мод.', 'зав', 
-                # '№', 
+                'Truck', 
+                '43118', 
+                'г.н.', 'гн', '(', 'г/р', ';', '43118', 'Гос.№', ',', 'зав.', 
+                # 'мод.', 
+                'зав', 
                 ')', 'ст ', 'Г/н', 
                 'АЦН'
                 ]
+    
+
     # Getting pilot splitted list of plates by sending first keyword from the list and L_units
     L_plates = splitter(L_keywords[0], L_units)
     # Keep on splitting by sending keywords and pilot plates list
@@ -67,92 +74,41 @@ def main():
     L_plates = set(L_plates)
     L_plates = list(L_plates)
     L_plates = [x for x in L_plates if x != '']
+    # Fishing out serial nums
     L_plates = [''.join(re.findall('\№.*', x)) if re.findall('\№.*', x) else x for x in L_plates]
-    pprint(L_plates)
-    pprint(len(L_plates))
-        
-    
-    # Extract plates from strings by regex into separate lists to avoid regex overlapping
-    # L_plates_original = [x for x in L_plates]
-    
-    # def plate_ripper(regex, L):
-    #     L_temp = []
-    #     for i in L:
-    #         if re.findall(regex, str(i)): 
-    #             L_temp.append(''.join(re.findall(regex, str(i))))
-    #         elif regex in i:
-    #             L_temp.append(i)
-    #         else:
-    #             L_temp.append('')
-    #     L = [x.strip() for x in L_temp]
-    #     return L
-    
-    
-    # # Every regex has its own list, with blanks if has no match
-    # L_plates1 = plate_ripper('\№.*', L_plates) #№ 14SU1113013
-    # L_plates2 = plate_ripper('\D\s*\d{3}\s*\D{2}\s*\d+', L_plates) #А 779 ЕН 186, А782ОН 186, Е811 Р8415
-    # L_plates3 = plate_ripper('\D\s*\d{3}\s*\D\s*\d+', L_plates) #Е801р9569
-    # L_plates4 = plate_ripper('\D{2}\s\d{4}\s{2}\d+', L_plates) #АХ 6576  86
-    # L_plates5 = plate_ripper('\d{4}\s\D{2}\s\d+', L_plates) #6654 УС 76
-    # L_plates6 = plate_ripper('\D{2}\s*\d{4}\s*\d+', L_plates) #АУ2845 86
-    # L_plates7 = plate_ripper('\d{2}\s*\D{2}\s*\d{4}', L_plates) #86 УК 4804
-    # L_plates8 = plate_ripper('\d+\s*\d+\s*\D{2}\s*\d+', L_plates) #0288  УВ 86, 06 41 УВ 86
-    # L_plates9 = plate_ripper('\D{2}\s*\d{2}\s*\d{4}', L_plates) #УВ 86 0594
-    # L_plates10 = plate_ripper('\D{2}\s\d{4}', L_plates) #АХ 9399
-    
-    
-    # # Merge obtained regex lists into the one
-    # def listmerger(L1, L2):
-    #     L = []
-    #     for x, y in zip(L1, L2):
-    #         if x != '':
-    #             L.append(x)
-    #         elif x == '' or len(x) < len(y):
-    #             L.append(y)    
-    #     return L
 
-    # # Clearing initial L_plates list to reuse it as a pilot list for merging
-    # L_plates.clear()
-    
-    # # Collecting regexed lists names into array
-    # L_regs = [
-    #     L_plates1, 
-    #     L_plates2, 
-    #     L_plates3, L_plates4, L_plates5, L_plates6, L_plates7, L_plates8, 
-    #     L_plates9,
-    #     L_plates10
-    #     ]
-    # # Getting pilot list by merging the first two lists
-    # L_plates = listmerger(L_regs[0], L_regs[1])
-    # # Sending pilot list and lists from array into listmerger to keep on merging
-    # for i in L_regs:
-    #     L_plates = listmerger(L_plates, i)
     
     
-    # df = pd.DataFrame(zip(L_plates_original, L_plates))
-    # df = df.drop_duplicates(subset=0, keep="last")
-    # df[0].replace('', np.nan, inplace=True)
-    # df = df.dropna(how='any', subset=[0], thresh=1)
-    
-    # L_plates_original = df[0].tolist()
-    # L_plates = df[1].tolist()
-    
-    # # Filling blank or corrupted items in plates from original plates
-    # def stringrelpicator(txt, L_plates_original, L_plates):
-    #     for i, j in zip(L_plates_original, L_plates):
-    #         if txt.casefold() in str(i):
-    #             ind = L_plates.index(j)
-    #             L_plates[ind] = i
-    #         elif txt == '' in str(j):
-    #             ind = L_plates.index(j)
-    #             L_plates[ind] = i
-    #     return L_plates
-    # L_plates = stringrelpicator('S/N', L_plates_original, L_plates)
-    # L_plates = stringrelpicator('', L_plates_original, L_plates)
-    
-    # df = pd.DataFrame(zip(L_plates_original, L_plates))
+    # Fishing mols and units by L_plates iterable from accountance_1 db
+    L_mols, L_units_temp, L_plates_unmatched = [], [], []
+    for i in L_plates:
+        if cursor.execute(f"SELECT Units FROM accountance_1 WHERE Units like '%{i}%'").fetchall():
+            L_mols.append(cursor.execute(f"SELECT Mols FROM accountance_1 WHERE Units like '%{i}%'").fetchall())
+            L_units_temp.append(cursor.execute(f"SELECT Units FROM accountance_1 WHERE Units like '%{i}%'").fetchall())
+        else:
+            
+            L_plates_unmatched.append(i)
 
-    # print(df)
+    
+    
+    L_mols = [', '.join(map(str, x)) for x in L_mols]
+    L_units_temp = [', '.join(map(str, x)) for x in L_units_temp]
+    L_units = [x for x in L_units_temp]
+   
+    df1 = pd.read_sql_query("SELECT * FROM accountance_1", cnx)
+    df2 = pd.DataFrame(zip(L_mols, L_units, L_plates), columns=['Mols', 'Units', 'Plates'])
+    df = pd.merge(df1, df2, how="outer")
+    # df = df.drop_duplicates(subset='Units', keep="last")
+    pprint(df)
+         
+    
+    #  Posting df to DB
+    print('Posting df to DB')
+    cursor.execute("DROP TABLE IF EXISTS accountance_2")
+    df.to_sql(name='accountance_2', con=db, if_exists='replace', index=False)
+    db.commit()
+    db.close()
+    
     
 
     

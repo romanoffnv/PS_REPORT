@@ -61,8 +61,19 @@ def main():
         L_mols = [(i + '**').split('**') * j for i, j in (zip(L_mols_scratch, L_counts))]
         L_mols = list(itertools.chain.from_iterable(L_mols))
         L_mols = list(filter(None, L_mols))
+
+        # Assigning indexed for the items
+        # L_indexes = []
+        # for i in range(0, len(L_mols)):
+        #     L_indexes.append(i)
        
-        df = pd.DataFrame(zip(L_mols, L_items), columns=['Mol', 'Unit'])
+        # print(L_indexes)
+        L_plates = []
+        for i in L_items:
+            L_plates.append('')
+
+        df = pd.DataFrame(zip(L_mols, L_items, L_plates), columns=['Mols', 'Units', 'Plates'])
+        df = df.dropna(how='any', subset=['Units'], thresh=1)
         print(df)
         # Posting df to DB
         print('Posting df to DB')

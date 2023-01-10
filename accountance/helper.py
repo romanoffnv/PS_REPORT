@@ -18,37 +18,13 @@ print(win32com.__gen_path__)
 
 
 def main():
-    df = pd.read_excel('Книга1.xlsx')
-    df = df.dropna(how='any', subset=['Флот', 'СПТ'], thresh=1)
-    df = df.drop_duplicates(subset='СПТ', keep="last")
+    fullstring = "StackAbuse"
+    substring = "tack"
 
-
-    pprint(df)
-
-    import xlsxwriter
-    writer = pd.ExcelWriter('Книга2.xlsx', engine='xlsxwriter')
-    # Write each dataframe to a different worksheet.
-    df.index += 1
-    df.to_excel(writer, index = True, header=True)
-    writer.save()
-
-    # string = ws1.Cells(1, 1).Value
-    # string = string.split(', ')
-    # for i in string:
-    #     print(re.sub('\(.*\)', '', i))
-
-    # row = 1
-    # L = []
-    # while True:
-    #     if ws1.Cells(row, 1).Value != None:
-    #         L.append(ws1.Cells(row, 1).Value)
-    #     row += 1
-    #     if row == 82:
-    #         break
-    # pprint(len(L))
-
-    # L = set(L)
-    # pprint(len(L))
+    if fullstring.find(substring) != -1:
+        print("Found!")
+    else:
+        print("Not found!")
     
 if __name__ == '__main__':
     start_time = time.time()
