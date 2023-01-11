@@ -1,186 +1,126 @@
-# This file grabs db as accountance_1
-# Wraps it in df
-# Filters df out by keywords so only relavant equipments stays
 import time
+import collections
 import xlsxwriter
 from win32com.client.gencache import EnsureDispatch
 import os
 import re
 from pprint import pprint
 import pandas as pd
+import numpy as np
 from functools import reduce
 import itertools
 import sqlite3
 import win32com
 print(win32com.__gen_path__)
 
-# Excel connection  
-xl = EnsureDispatch('Excel.Application')
-wb = xl.Workbooks.Open(f"{os.getcwd()}\\acc.xls")
-ws1 = wb.Worksheets(1)
 
 # Pandas
 pd.set_option('display.max_rows', None)
 
 # db connections
-db = sqlite3.connect('accountance.db')
+db = sqlite3.connect('data.db')
 db.row_factory = lambda cursor, row: row[0]
 cursor = db.cursor()
+cnx = sqlite3.connect('data.db')
+
 pd.set_option('display.max_rows', None)
 
 def main():
-    # exp 1
-    # Get accountance_1 db cols as lists L_mols and L_units
-    L_mols = cursor.execute("SELECT Mol FROM accountance_1").fetchall()
-    L_units = cursor.execute("SELECT Unit FROM accountance_1").fetchall()
+    # Get Unit col from accountance_1.db as list
+    L_units = cursor.execute("SELECT Units FROM accountance_2").fetchall()
     
-    # Build dataframe
-    data = pd.DataFrame(zip(L_mols, L_units), columns=['Responsible', 'Item'])
+    # ******************************* REUSABLE FUNCTIONS ****************************************
     
-    # Populate list of keywords for df filtration
-    L_units_filter = ['г/н', 'гос.№', 'гос№', 'гос. №', 'Truck', 'VIN', 'Насосная установка', 
-                    'Mercedes', 'KENWORTH', 'Передвижная паровая установка', 'ППУ', 
-                    'Полуприцеп', 'прицеп', 'тягач', 'Кран', 'Гидратационная установка', 'Автоцистерна', 'смеситель',
-                    'блендер', 'КАМАЗ', 'Камаз', ' гн ']
+    # STRING SPLITTER
+    # Landing splitting marks
+    def mark_landing(s, L_units):
+        L = [re.sub(s, '*split*', x) for x in L_units]
+        return L
     
-    # Filter df by keywords
-    data = data[data['Item'].str.contains('|'.join(L_units_filter))]
+    # Split strings in Unit list by the keywords and get as L_plates list
+    def splitter(L):
+        L = [x.split('*split*') for x in L]
+        L = list(itertools.chain.from_iterable(L))
     
-    # Destructure df into lists
-    L_units = data.loc[:, 'Item'].tolist()
-    L_mols = data.loc[:, 'Responsible'].tolist()
-    # Derive the list of untouchable units to post it into db later
-    L_units_original = [x for x in L_units] 
-      
-    # Slice items starting from the keyword's index to the end of the sentence
-    def slicer (x, L_units):
-        L_units_temp = []
-        if x == 'VIN' or x == 'vin' or x == 'VIV':
-            for i in L_units:
-                if x in i:
-                    ind = i.index(x)
-                    L_units_temp.append(i[:ind])
-                else:
-                    L_units_temp.append(i)
-            
-            L_units = [str(x).strip() for x in L_units_temp]
-            L_units_temp.clear() 
-            
-            return L_units
-        else:
-            for i in L_units:
-                if x in i:
-                    ind = i.index(x)
-                    L_units_temp.append(i[ind:])
-                else:
-                    L_units_temp.append(i)
-            
-            L_units = [str(x).strip() for x in L_units_temp]
-            L_units_temp.clear() 
-            
-            return L_units
 
-    L_keywords = ['г/н', '№', ' гн ', 'г/р', 'г.н.', 'Г/н', 'Truck', 'VIN', 'vin', 'VIV']
+        return L
+
+    # ******************************* FUNCTION CALL PARAMS ****************************************
+    
+    # Sending keywords to mark_landing func
+    L_keywords = ['г/н', 'Truck', '43118', 'г.н.', 'гн', '\(', 'г/р', ';', ',', 'Гос.№', 'зав.',
+                'зав', '№', '\)', 'ст ', 'Г/н', 'АЦН', 'электростанция', 'дизельный']
+
     for i in L_keywords:
-        L_units = slicer(i, L_units)
-
-        # Remove crap like 'г/н' etc
-    def crapRemover(x, L_units):
-        L_units = [i.replace(x, '') for i in L_units]
-        return L_units
-
-    L_keywords = ['г/н', '№', 'гн ', 'г.н.', 'Truck', 'г/р', 'Г/н', ')', ' ', 'RUS', ';', ',', ':']
-    for i in L_keywords:
-        L_units = crapRemover(i, L_units)
-
-    # Fishing out plates by regex from long sentences
-    def regexBomber(x, L_units):
-        
-        L_plates_temp = []
-        for i in L_units:
-            if re.findall(x, str(i)):
-                L_plates_temp.append(''.join(re.findall(x, str(i))))
-            else:
-                L_plates_temp.append(i)
-                # print(i)
+        L_units = mark_landing(str(i), L_units)
     
-        L_units = [str(x).strip() for x in L_plates_temp]
-        L_plates_temp.clear() 
-            
-        return L_units
-
-    L_units = regexBomber(re.compile('\s\D\s*\d+\D{2}\s*\d+'), L_units)
-    L_units = regexBomber(re.compile('\D{1}\s*\d+\s*\D{2}\s*\d+'), L_units)
-
-    # Remove paranthesis and content
-    L_patterns = ['\(.*\)', '\(.*', '\-']
-    for i in L_patterns:
-        L_units = [''.join(re.sub(i, '', x)).strip() for x in L_units]
-
-    # Remove pointless sentences
-    L_units = [x if len(x) < 20 else '' for x in L_units]
-       
-    # Converting leading region into the trailing region in plates (i.e. '86УК7801': 'УК780186',)
-    L_units_temp = []
-    L_units = [''.join(re.sub('\s', '', x)).strip() for x in L_units]
-    for i in L_units:
-        try:
-            if i[:1].isdigit() and str(i[2]).isalpha():
-                L_units_temp.append(i[2:] + i[:2])
-            else:
-                L_units_temp.append(i)
-        except IndexError:
-            L_units_temp.append(i)
-
-    L_units = [x for x in L_units_temp]
-    
-    # Turn plates into 123abc type
-    def transform_plates(plates):
-        L_regions_long = [126, 156, 158, 174, 186, 188, 196, 797]
-        L_regions_short = ['01', '02', '03', '04', '05', '06', '07', '09']
-        for i in L_regions_long:
-            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 9 else x for x in plates]
-        for i in L_regions_short:
-            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 8 or 'kzн' in str(x) else x for x in plates]
-        for i in range(10, 100):
-            plates = [x.removesuffix(str(i)).strip() if x != None and len(x) == 8 or 'kzн' in str(x) else x for x in plates]
-        
-        plates_numeric = [''.join(re.findall(r'\d+', x)).lower() for x in plates if x != None]
-        plates_literal = [''.join(re.findall(r'\D', x)).lower() for x in plates if x != None]
-        plates = [str(x) + str(y) for x, y in zip(plates_numeric, plates_literal)]
-        plates = [''.join(re.sub(r'\s+', '', x)).lower() for x in plates if x != None]
-        return plates
-    
-    
-    L_PI_acc = transform_plates(L_units) 
-     
-    # Crutch replacements for PI
-    D_crutches = {
-                        '13621-наприцепетра': '',
-                        '5668автоцистернаск': '5668ск',
-                        '65221тягачкамаз': '652внт',
-                        '2502/': '',
-                        '2501/': '',
-                        '300полуприцепм.рс-': '300',
-                        '25001-к-': '',
-                        '461bhp': '461внр',
-                        '66577ус': '6657ус'
-                        
-            }        
-        
-    # Replacing crappy unit names into omnicomm smth
-    for k, v in D_crutches.items():
-        L_PI_acc = [x.replace(k, v) for x in L_PI_acc]
-
+    # Getting splitted list by marks as L_plates
+    L_plates  = splitter(L_units)
    
-    df = pd.DataFrame(zip(L_mols, L_units_original, L_units, L_PI_acc), columns=['Mols', 'Units', 'Plates', 'PI'])
+    # ********************************************************************************************
     
-    # Posting df to DB
+    # Filter out strings that:
+    # have more or less letters than in a real plate 
+    L_plates = [''.join(x).strip() for x in L_plates if (sum(map(str.isalpha, x)) < 4 and sum(map(str.isalpha, x)) > 1)]
+    
+    # are shorter than 6 characters
+    L_plates = [x for x in L_plates if len(x) > 6]
+    
+    # have one of the keys
+    L_keys = ['г.в.', 'л.с.', 'VIN', 'НД', 'Квт', 'кВт', 'час', 'ит', 'Gr', 'dpi', 
+              'ф/з', 'FHD', 'до', '.', '-', '=', 'Ш', 'Mb', 'лот', 'HI', 'г', 'кВт', 'ST', 'TTR', 's/n', 'сер№', 'S/N']
+    for i in L_keys:
+        L_plates = [x for x in L_plates if i not in x]
+    # regexed as follows
+    L_reg = ['\ЕМС\s\d{3}', #ЕМС 600
+             '\d+\х\d.*', #8000х2500 мм, 6000х2450х2600
+             '\d{2}\.\d\s\мм', #50.8 мм
+            ]
+    for i in L_reg:
+        L_plates = [re.sub(i, '', x) for x in L_plates]
+
+    # Removing empty strings
+    L_plates = [str(x) for x in L_plates if x != ''] 
+    
+    # Fishing mols and units by L_plates iterable from accountance_2 db
+    L_mols, L_units_temp, L_plates_unmatched = [], [], []
+    for i in L_plates:
+        if cursor.execute(f"SELECT Units FROM accountance_2 WHERE Units like '%{i}%'").fetchall():
+            L_mols.append(cursor.execute(f"SELECT Mols FROM accountance_2 WHERE Units like '%{i}%'").fetchall())
+            L_units_temp.append(cursor.execute(f"SELECT Units FROM accountance_2 WHERE Units like '%{i}%'").fetchall())
+        else:
+            
+            L_plates_unmatched.append(i)
+
+    L_mols = [', '.join(map(str, x)) for x in L_mols]
+    L_units_temp = [', '.join(map(str, x)) for x in L_units_temp]
+    L_units = [x for x in L_units_temp]
+   
+    # Slicing dubbed Mols by comma combined while searching db like {i}
+    L_mols_temp = []
+    for i in L_mols:
+        ind = str(i).find(',')
+        if ind != -1:
+            L_mols_temp.append(i[:ind])
+        else:
+            L_mols_temp.append(i)
+    L_mols = [x for x in L_mols_temp]
+    
+    df1 = pd.read_sql_query("SELECT * FROM accountance_1", cnx)
+    df2 = pd.DataFrame(zip(L_mols, L_units, L_plates), columns=['Mols', 'Units', 'Plates'])
+    df = pd.merge(df1, df2, how="outer")
+    df = df.drop_duplicates(subset='Units', keep="last")
+    pprint(df)
+
+    #  Posting df to DB
     print('Posting df to DB')
-    cursor.execute("DROP TABLE IF EXISTS accountance_2")
-    df.to_sql(name='accountance_2', con=db, if_exists='replace', index=False)
+    cursor.execute("DROP TABLE IF EXISTS accountance_3")
+    df.to_sql(name='accountance_3', con=db, if_exists='replace', index=False)
     db.commit()
     db.close()
+    
+    
+
     
 if __name__ == '__main__':
     start_time = time.time()

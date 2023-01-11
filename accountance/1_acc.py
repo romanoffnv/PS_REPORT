@@ -75,10 +75,17 @@ def main():
         df = pd.DataFrame(zip(L_mols, L_items, L_plates), columns=['Mols', 'Units', 'Plates'])
         df = df.dropna(how='any', subset=['Units'], thresh=1)
         print(df)
-        # Posting df to DB
+        # Posting df to DB as raw accountance_1
         print('Posting df to DB')
         cursor.execute("DROP TABLE IF EXISTS accountance_1")
         df.to_sql(name='accountance_1', con=db, if_exists='replace', index=False)
+        db.commit()
+
+        df = df[df["Units"].str.contains("Гамма плотномер") == False]
+        # Posting df to DB as cleaned for "Гамма плотномер" (because it interferes with the trailer plates)as accountance_2
+        print('Posting df to DB')
+        cursor.execute("DROP TABLE IF EXISTS accountance_2")
+        df.to_sql(name='accountance_2', con=db, if_exists='replace', index=False)
         db.commit()
         db.close()
         
