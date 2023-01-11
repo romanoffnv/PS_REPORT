@@ -26,7 +26,7 @@ cnx = sqlite3.connect('data.db')
 pd.set_option('display.max_rows', None)
 
 def main():
-    # Get Unit col from accountance_1.db as list
+    # Get Unit col from accountance_2.db as list
     L_units = cursor.execute("SELECT Units FROM accountance_2").fetchall()
     
     # ******************************* REUSABLE FUNCTIONS ****************************************
